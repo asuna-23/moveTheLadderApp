@@ -1,0 +1,19 @@
+<template>
+  <span :class="labelClass">{{ text }}</span>
+</template>
+
+<script>
+export default {
+  name: "CommonLabel",
+  props: {
+    text: {
+      type: String,
+      required: true,
+    },
+    labelClass: {
+      type: String,
+      default: "",
+    },
+  },
+};
+</script>

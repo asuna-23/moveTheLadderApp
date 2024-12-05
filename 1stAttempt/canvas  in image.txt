@@ -1,0 +1,258 @@
+import os
+from flask import Flask, send_from_directory
+
+app = Flask(__name__)
+
+# Set the path to the 'uploads_folder' inside 'assets'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'assets', 'uploads_folder')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Route to serve the image from the uploads folder
+@app.route('/assets/uploads/<filename>')
+def get_image(filename):
+    """
+    Serve the image from the 'uploads_folder'.
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+----
+
+<template>
+  <div>
+    <!-- Canvas to display image and draw rectangles -->
+    <canvas ref="myCanvas" width="600" height="400"></canvas>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      imageUrl: '', // Image URL from backend
+      rectangles: [
+        { x: 50, y: 50, width: 100, height: 50, color: 'red' },
+        { x: 200, y: 80, width: 120, height: 60, color: 'blue' },
+        { x: 350, y: 150, width: 80, height: 40, color: 'green' },
+        { x: 50, y: 200, width: 130, height: 70, color: 'orange' },
+        { x: 200, y: 250, width: 150, height: 90, color: 'purple' },
+        { x: 400, y: 300, width: 60, height: 40, color: 'yellow' },
+        { x: 100, y: 100, width: 90, height: 60, color: 'brown' },
+        { x: 150, y: 150, width: 100, height: 50, color: 'cyan' },
+        { x: 300, y: 200, width: 80, height: 70, color: 'pink' },
+        { x: 450, y: 50, width: 100, height: 120, color: 'gray' },
+        { x: 350, y: 300, width: 100, height: 50, color: 'teal' },
+        { x: 200, y: 350, width: 120, height: 60, color: 'lime' },
+        { x: 100, y: 250, width: 130, height: 80, color: 'violet' },
+        { x: 50, y: 300, width: 110, height: 60, color: 'gold' },
+      ]
+    };
+  },
+  mounted() {
+    // Fetch image from backend
+    axios.get('http://localhost:5000/assets/uploads/line_chart.png', { responseType: 'blob' })
+      .then(response => {
+        const imageUrl = URL.createObjectURL(response.data);
+        this.imageUrl = imageUrl;
+
+        // After image is loaded, draw it on canvas and draw rectangles
+        const canvas = this.$refs.myCanvas;
+        const ctx = canvas.getContext('2d');
+        const image = new Image();
+        image.src = this.imageUrl;
+
+        image.onload = () => {
+          // Draw the image on the canvas
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          // Draw each rectangle on top of the image
+          this.rectangles.forEach(rect => {
+            ctx.fillStyle = rect.color;
+            ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          });
+        };
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+};
+</script>
+
+
+###### pytest
+
+import os
+import pytest
+from flask import Flask
+from flask.testing import FlaskClient
+
+# Import the app from the file where it's defined
+from your_app import app  # Make sure to replace 'your_app' with the correct file name
+
+# Set up test configuration for the app
+@pytest.fixture
+def client() -> FlaskClient:
+    app.config['TESTING'] = True
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'assets', 'uploads_folder')
+    with app.test_client() as client:
+        yield client
+
+# Test case to check if the image is served correctly
+def test_get_image(client):
+    # Assume you have a file named 'test_image.png' in your uploads folder
+    filename = 'test_image.png'
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    
+    # Ensure the file exists in the upload folder
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w') as f:
+        f.write('dummy image data')  # Dummy content for test
+
+    # Request the image
+    response = client.get(f'/assets/uploads/{filename}')
+    
+    # Check if the response status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Check that the content-type is correct (should be image/png in this case)
+    assert response.content_type == 'image/png'
+
+    # Clean up: remove the test image file after the test
+    os.remove(file_path)
+
+# Test case to check for non-existing image file (should return 404)
+def test_get_image_not_found(client):
+    filename = 'non_existing_image.png'
+    
+    # Request a non-existing file
+    response = client.get(f'/assets/uploads/{filename}')
+    
+    # Assert that a 404 status code is returned
+    assert response.status_code == 404
+
+# Test case to verify directory permissions (shouldn't expose the folder directly)
+def test_invalid_directory_access(client):
+    invalid_filename = '../secret_image.png'  # Path traversal test
+
+    # Request a file that might try to traverse outside the 'uploads' folder
+    response = client.get(f'/assets/uploads/{invalid_filename}')
+    
+    # The server should return a 404 error (invalid path)
+    assert response.status_code == 404
+
+
+###### jest test
+
+import { shallowMount } from '@vue/test-utils';
+import CanvasComponent from '@/components/CanvasComponent.vue'; // Adjust the import path accordingly
+import axios from 'axios';
+
+// Mock axios and canvas methods
+jest.mock('axios');
+jest.mock('canvas', () => ({
+  getContext: jest.fn().mockReturnValue({
+    drawImage: jest.fn(),
+    fillRect: jest.fn()
+  })
+}));
+
+describe('CanvasComponent', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    // Mock the canvas context
+    const canvas = {
+      getContext: jest.fn(() => ({
+        drawImage: jest.fn(),
+        fillRect: jest.fn(),
+      }))
+    };
+    global.HTMLCanvasElement.prototype.getContext = canvas.getContext;
+
+    // Mount the component
+    wrapper = shallowMount(CanvasComponent);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetches the image and draws it on the canvas', async () => {
+    const imageUrl = 'http://localhost:5000/assets/uploads/line_chart.png';
+    
+    // Mock the axios response with a Blob
+    axios.get.mockResolvedValueOnce({
+      data: new Blob()
+    });
+
+    // Simulate the image loading
+    const image = new Image();
+    image.src = imageUrl;
+    const drawImageMock = jest.fn();
+
+    // Simulate the image onload event
+    image.onload = () => {
+      drawImageMock();
+    };
+    image.onload();
+
+    // Trigger mounted hook by waiting for the promise to resolve
+    await wrapper.vm.$nextTick();
+
+    // Check if the axios.get call was made
+    expect(axios.get).toHaveBeenCalledWith(imageUrl, { responseType: 'blob' });
+
+    // Check if drawImage was called
+    const canvas = wrapper.find('canvas').element;
+    const ctx = canvas.getContext('2d');
+    expect(ctx.drawImage).toHaveBeenCalledTimes(1);
+  });
+
+  it('draws rectangles on the canvas after image loads', async () => {
+    // Mock the axios response with a Blob (simulate image fetch)
+    axios.get.mockResolvedValueOnce({
+      data: new Blob()
+    });
+
+    // Trigger the mounted lifecycle method
+    await wrapper.vm.$nextTick();
+
+    // Check that the canvas context fillRect is called for each rectangle
+    const canvas = wrapper.find('canvas').element;
+    const ctx = canvas.getContext('2d');
+    
+    // Expect fillRect to be called for each rectangle in the `rectangles` array
+    wrapper.vm.rectangles.forEach(rect => {
+      expect(ctx.fillRect).toHaveBeenCalledWith(rect.x, rect.y, rect.width, rect.height);
+    });
+  });
+
+  it('handles error gracefully when image fetch fails', async () => {
+    // Mock axios to simulate an error response
+    axios.get.mockRejectedValueOnce(new Error('Image fetch failed'));
+
+    // Trigger the mounted hook and wait for the promise to resolve
+    await wrapper.vm.$nextTick();
+
+    // Verify that the error is logged in the console
+    // We can spy on console.error to check if it's called
+    const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation(() => {});
+    expect(consoleErrorMock).toHaveBeenCalledWith(new Error('Image fetch failed'));
+
+    consoleErrorMock.mockRestore();
+  });
+});
+
+
+
+
+----------------------------------
+
+ctx.drawImage(image, x, y, width, height): Draws the image onto the canvas.
+ctx.fillRect(x, y, width, height): Draws a filled rectangle at the specified coordinates with the given width and height.
+ctx.fillStyle = color: Sets the color for filling shapes (rectangles in this case).

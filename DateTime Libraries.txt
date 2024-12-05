@@ -1,0 +1,184 @@
+- For lightweight and simplicity: Use Day.js or date-fns.
+- For timezone and i18n support: Use Luxon.
+- If working with reactive Vue apps: Use VueUse's useDateFormat.
+
+- Use Day.js or VueUse for lightweight and simple date/time handling.
+- Use Luxon for timezone and internationalization.
+- Use Moment.js only if you're working on legacy projects.
+
+---
+
+npm install dayjs
+
+<template>
+  <div>
+    <p>Current Date: {{ currentDate }}</p>
+    <p>Current Time: {{ currentTime }}</p>
+  </div>
+</template>
+
+<script>
+import dayjs from "dayjs";
+
+export default {
+  data() {
+    return {
+      currentDate: "",
+      currentTime: "",
+    };
+  },
+  methods: {
+    updateDateTime() {
+      const now = dayjs();
+      this.currentDate = now.format("YYYY-DD-MM"); // Example: 2024-05-12
+      this.currentTime = now.format("HH:mm:ss");  // Example: 14:30:45
+    },
+  },
+  mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000); // Update every second
+  },
+};
+</script>
+
+
+----
+
+npm install luxon
+
+<template>
+  <div>
+    <p>Current Date: {{ currentDate }}</p>
+    <p>Current Time: {{ currentTime }}</p>
+  </div>
+</template>
+
+<script>
+import { DateTime } from "luxon";
+
+export default {
+  data() {
+    return {
+      currentDate: "",
+      currentTime: "",
+    };
+  },
+  methods: {
+    updateDateTime() {
+      const now = DateTime.now();
+      this.currentDate = now.toFormat("yyyy-dd-MM"); // Example: 2024-12-05
+      this.currentTime = now.toFormat("HH:mm:ss");  // Example: 14:30:45
+    },
+  },
+  mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000); // Update every second
+  },
+};
+</script>
+
+
+----
+
+npm install date-fns
+
+<template>
+  <div>
+    <p>Current Date: {{ currentDate }}</p>
+    <p>Current Time: {{ currentTime }}</p>
+  </div>
+</template>
+
+<script>
+import { format } from "date-fns";
+
+export default {
+  data() {
+    return {
+      currentDate: "",
+      currentTime: "",
+    };
+  },
+  methods: {
+    updateDateTime() {
+      const now = new Date();
+      this.currentDate = format(now, "yyyy-dd-MM"); // Example: 2024-05-12
+      this.currentTime = format(now, "HH:mm:ss");  // Example: 14:30:45
+    },
+  },
+  mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000); // Update every second
+  },
+};
+</script>
+
+----
+
+npm install moment
+
+<template>
+  <div>
+    <p>Current Date: {{ currentDate }}</p>
+    <p>Current Time: {{ currentTime }}</p>
+  </div>
+</template>
+
+<script>
+import moment from "moment";
+
+export default {
+  data() {
+    return {
+      currentDate: "",
+      currentTime: "",
+    };
+  },
+  methods: {
+    updateDateTime() {
+      const now = moment();
+      this.currentDate = now.format("YYYY-DD-MM"); // Example: 2024-05-12
+      this.currentTime = now.format("HH:mm:ss");  // Example: 14:30:45
+    },
+  },
+  mounted() {
+    this.updateDateTime();
+    setInterval(this.updateDateTime, 1000); // Update every second
+  },
+};
+</script>
+
+
+
+----
+
+npm install @vueuse/core
+
+
+<template>
+  <div>
+    <p>Current Date: {{ currentDate }}</p>
+    <p>Current Time: {{ currentTime }}</p>
+  </div>
+</template>
+
+<script>
+import { ref } from "vue";
+import { useDateFormat } from "@vueuse/core";
+
+export default {
+  setup() {
+    const now = ref(new Date());
+    const currentDate = useDateFormat(now, "YYYY-DD-MM"); // Example: 2024-05-12
+    const currentTime = useDateFormat(now, "HH:mm:ss");  // Example: 14:30:45
+
+    // Update time every second
+    setInterval(() => {
+      now.value = new Date();
+    }, 1000);
+
+    return { currentDate, currentTime };
+  },
+};
+</script>
+

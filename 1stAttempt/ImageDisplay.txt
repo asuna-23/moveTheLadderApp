@@ -1,0 +1,652 @@
+1. Store the image files
+Save your image files in a directory (e.g., uploads) within your backend.
+
+2. Serve the images
+Use Flask's send_from_directory to serve the images.
+
+
+from flask import Flask, send_from_directory
+
+app = Flask(__name__)
+
+# Configuring the upload folder
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/images/<filename>')
+def get_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+#################
+
+import os
+import pytest
+from flask import Flask
+from io import BytesIO
+
+# Flask app
+app = Flask(__name__)
+
+# Configuring the upload folder
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/images/<filename>')
+def get_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+
+# Test cases
+@pytest.fixture
+def client():
+    """Fixture to set up the Flask test client"""
+    # Create the upload folder and add a test image
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    test_image = os.path.join(UPLOAD_FOLDER, 'test_image.jpg')
+    with open(test_image, 'wb') as f:
+        f.write(b"fake image content")  # Write some dummy content to the image file
+
+    # Yield the test client
+    with app.test_client() as client:
+        yield client
+
+    # Cleanup: Remove the upload folder after tests are done
+    os.remove(test_image)
+    os.rmdir(UPLOAD_FOLDER)
+
+
+def test_get_image(client):
+    """Test retrieving an image"""
+    response = client.get('/images/test_image.jpg')
+    
+    # Assert the response status code is 200 (OK)
+    assert response.status_code == 200
+    
+    # Assert the content type is 'image/jpeg' (assuming it's a jpg image)
+    assert response.content_type == 'image/jpeg'
+    
+    # Assert the content of the response matches the image's dummy content
+    assert response.data == b"fake image content"
+
+
+def test_image_not_found(client):
+    """Test retrieving a non-existent image"""
+    response = client.get('/images/non_existent_image.jpg')
+    
+    # Assert the response status code is 404 (Not Found)
+    assert response.status_code == 404
+
+
+
+----
+
+<!-- 1. in vue component -->
+
+<template>
+  <div>
+    <img :src="imageUrl" alt="Loaded Image" />
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      imageUrl: null, // The URL of the image
+    };
+  },
+  mounted() {
+    // Set the image URL dynamically
+    this.imageUrl = 'http://127.0.0.1:5000/images/image.jpg'; // Replace with your dynamic path
+  },
+};
+</script>
+
+## jest test
+
+import { shallowMount } from '@vue/test-utils';
+import ImageComponent from '@/components/ImageComponent.vue';
+
+describe('ImageComponent', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(ImageComponent);
+  });
+
+  test('setImageUrl should set the imageUrl correctly', () => {
+    // Spy on the setImageUrl method
+    const setImageUrlSpy = jest.spyOn(wrapper.vm, 'setImageUrl');
+
+    // Call mounted lifecycle hook
+    wrapper.vm.$nextTick(() => {
+      // Test if setImageUrl was called
+      expect(setImageUrlSpy).toHaveBeenCalled();
+
+      // Test if the imageUrl was set correctly
+      expect(wrapper.vm.imageUrl).toBe('http://127.0.0.1:5000/images/image.jpg');
+    });
+  });
+});
+
+
+<!-- 2 in vue component -->
+
+<template>
+  <div v-if="imageUrl">
+    <img :src="imageUrl" alt="Dynamic Image" />
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      imageUrl: null,
+    };
+  },
+  async mounted() {
+    try {
+      // Replace with your API endpoint that returns the image filename
+      const response = await fetch('http://127.0.0.1:5000/api/get-image');
+      const data = await response.json();
+      this.imageUrl = `http://127.0.0.1:5000/images/${data.filename}`;
+    } catch (error) {
+      console.error('Error fetching image:', error);
+    }
+  },
+};
+</script>
+
+## jest test
+
+import { shallowMount } from '@vue/test-utils';
+import ImageComponent from '@/components/ImageComponent.vue';
+
+// Mocking the global fetch function
+global.fetch = jest.fn();
+
+describe('ImageComponent', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    // Reset the mock before each test
+    fetch.mockClear();
+  });
+
+  test('sets imageUrl correctly when API call is successful', async () => {
+    // Simulating a successful response from the API
+    fetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ filename: 'line_chart.png' })
+    });
+
+    // Mount the component
+    wrapper = shallowMount(ImageComponent);
+
+    // Wait for the async mounted method to finish
+    await wrapper.vm.$nextTick();
+
+    // Test if fetch was called with the correct URL
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:5000/api/get-image');
+
+    // Test if imageUrl is set correctly
+    expect(wrapper.vm.imageUrl).toBe('http://127.0.0.1:5000/images/line_chart.png');
+    
+    // Check if the img tag is rendered with the correct src
+    const imgTag = wrapper.find('img');
+    expect(imgTag.attributes('src')).toBe('http://127.0.0.1:5000/images/line_chart.png');
+  });
+
+  test('handles error if the API call fails', async () => {
+    // Simulating an error response from the API
+    fetch.mockRejectedValueOnce(new Error('Error fetching image'));
+
+    // Mount the component
+    wrapper = shallowMount(ImageComponent);
+
+    // Wait for the async mounted method to finish
+    await wrapper.vm.$nextTick();
+
+    // Test if fetch was called with the correct URL
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:5000/api/get-image');
+
+    // Test if imageUrl is still null due to error
+    expect(wrapper.vm.imageUrl).toBeNull();
+
+    // Check that no image tag is rendered
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(false);
+  });
+});
+
+
+
+
+<!-- 2nd option -->
+
+from flask import Blueprint, send_from_directory, current_app
+
+image_blueprint = Blueprint('images', __name__)
+
+@image_blueprint.route('/images/<filename>')
+def get_image(filename):
+    return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+
+# Register the blueprint
+app.register_blueprint(image_blueprint)
+
+
+<template>
+  <div>
+    <!-- Display the image if the image URL is loaded -->
+    <img :src="imageUrl" alt="Loaded Image" v-if="imageUrl" />
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      // Dynamically set the image URL
+      imageUrl: null,
+    };
+  },
+  mounted() {
+    // Example: If you have the image filename stored in a variable or fetched from an API
+    const imageName = 'example.jpg';  // Replace with your dynamic image name
+    this.imageUrl = `http://localhost:5000/images/${imageName}`; // Construct URL
+  },
+};
+</script>
+
+## pytest
+
+import os
+import pytest
+from flask import Flask, current_app
+from werkzeug.exceptions import NotFound
+from flask import send_from_directory
+
+# Create a test Flask app
+@pytest.fixture
+def app():
+    # Set up test app with test config
+    app = Flask(__name__)
+
+    # Set a test upload folder for images
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'test_images')
+    
+    # Create an image blueprint
+    image_blueprint = Blueprint('images', __name__)
+
+    # Define route for serving images
+    @image_blueprint.route('/images/<filename>')
+    def get_image(filename):
+        return send_from_directory(current_app.config['UPLOAD_FOLDER'], filename)
+    
+    # Register the blueprint with the app
+    app.register_blueprint(image_blueprint)
+
+    yield app
+
+# Create a test client fixture
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+# Test: Valid image file
+def test_get_image_valid(client):
+    # First, make sure the 'test_images' folder exists and contains a valid image
+    test_image_path = os.path.join(os.path.dirname(__file__), 'test_images', 'valid_image.jpg')
+
+    # Ensure that a test image exists
+    if not os.path.exists(os.path.dirname(test_image_path)):
+        os.makedirs(os.path.dirname(test_image_path))
+
+    # Create a mock image file (for testing purposes)
+    with open(test_image_path, 'wb') as f:
+        f.write(b"Fake image data")
+
+    # Send a request to the Flask app to retrieve the image
+    response = client.get('/images/valid_image.jpg')
+
+    # Assert that the response is correct
+    assert response.status_code == 200
+    assert response.data == b"Fake image data"
+    assert response.content_type == "image/jpeg"
+
+    # Clean up: remove the mock image
+    os.remove(test_image_path)
+
+# Test: Invalid image file
+def test_get_image_invalid(client):
+    # Send a request to the Flask app for an image that doesn't exist
+    response = client.get('/images/non_existent_image.jpg')
+
+    # Assert that the response returns a 404 error
+    assert response.status_code == 404
+
+
+## jest test
+
+import { shallowMount } from '@vue/test-utils';
+import ImageComponent from '@/components/ImageComponent.vue';
+
+describe('ImageComponent', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    // Mount the component before each test
+    wrapper = shallowMount(ImageComponent);
+  });
+
+  test('sets imageUrl correctly when component is mounted', async () => {
+    // Check if imageUrl is set correctly
+    expect(wrapper.vm.imageUrl).toBe('http://localhost:5000/images/example.jpg');
+
+    // Wait for the component to update
+    await wrapper.vm.$nextTick();
+
+    // Check if img tag exists and has the correct src
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(true);  // Ensure the img tag is rendered
+    expect(imgTag.attributes('src')).toBe('http://localhost:5000/images/example.jpg');
+  });
+
+  test('does not render image if imageUrl is null', async () => {
+    // Temporarily set imageUrl to null
+    await wrapper.setData({ imageUrl: null });
+
+    // Wait for the component to update
+    await wrapper.vm.$nextTick();
+
+    // Check that img tag is not rendered
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(false);
+  });
+});
+
+
+
+------------------
+
+<template>
+  <div>
+    <!-- Display image once it is fetched -->
+    <img :src="imageUrl" alt="Dynamic Image" v-if="imageUrl" />
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      imageUrl: null,  // This will hold the complete image URL
+    };
+  },
+  mounted() {
+    // Fetch the image filename from an API or database
+    this.fetchImage();
+  },
+  methods: {
+    async fetchImage() {
+      try {
+        // Example: Replace with your API endpoint that returns the image filename
+        const response = await fetch('http://localhost:5000/api/get-image'); 
+        const data = await response.json();
+        
+        // Construct the image URL using the filename returned by the backend
+        this.imageUrl = `http://localhost:5000/images/${data.filename}`;
+      } catch (error) {
+        console.error('Error fetching image:', error);
+      }
+    },
+  },
+};
+</script>
+
+## test
+
+import { shallowMount } from '@vue/test-utils';
+import ImageComponent from '@/components/ImageComponent.vue';
+
+describe('ImageComponent', () => {
+  let wrapper;
+  const mockFetchResponse = {
+    filename: 'example.jpg',
+  };
+
+  beforeEach(() => {
+    // Mock the global fetch method
+    global.fetch = jest.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve(mockFetchResponse),
+      })
+    );
+
+    // Mount the component before each test
+    wrapper = shallowMount(ImageComponent);
+  });
+
+  afterEach(() => {
+    // Clean up after each test to remove the mock
+    jest.resetAllMocks();
+  });
+
+  test('fetchImage method should set imageUrl correctly', async () => {
+    // Ensure fetch is called once
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Wait for the component to finish updating after fetch
+    await wrapper.vm.$nextTick();
+
+    // Check that the imageUrl was set correctly
+    expect(wrapper.vm.imageUrl).toBe('http://localhost:5000/images/example.jpg');
+
+    // Ensure the img tag exists and has the correct src
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(true); // The img tag should exist
+    expect(imgTag.attributes('src')).toBe('http://localhost:5000/images/example.jpg'); // The src should match the expected image URL
+  });
+
+  test('fetchImage should handle errors gracefully', async () => {
+    // Simulate an error in the fetch request
+    global.fetch.mockImplementationOnce(() =>
+      Promise.reject(new Error('Failed to fetch image'))
+    );
+
+    // Call fetchImage method and wait for next tick
+    await wrapper.vm.fetchImage();
+    await wrapper.vm.$nextTick();
+
+    // Check if the imageUrl is still null
+    expect(wrapper.vm.imageUrl).toBeNull();
+
+    // Ensure the img tag does not exist when there's an error
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(false);
+  });
+
+  test('img element should not be displayed if imageUrl is null', async () => {
+    // Initially, imageUrl is null, so no img element should be rendered
+    const imgTag = wrapper.find('img');
+    expect(imgTag.exists()).toBe(false);
+
+    // After fetching the image, the img tag should be rendered
+    await wrapper.vm.fetchImage();
+    await wrapper.vm.$nextTick();
+
+    // Check if img tag exists and has correct src after fetch
+    const updatedImgTag = wrapper.find('img');
+    expect(updatedImgTag.exists()).toBe(true);
+    expect(updatedImgTag.attributes('src')).toBe('http://localhost:5000/images/example.jpg');
+  });
+});
+
+
+
+
+############################ OR #########################
+
+import os
+from flask import Flask, send_from_directory
+
+app = Flask(__name__)
+
+# Set the path to the 'uploads_folder' inside 'assets'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'assets', 'uploads_folder')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Route to serve the image from the uploads folder
+@app.route('/assets/uploads/<filename>')
+def get_image(filename):
+    """
+    Serve the image from the 'uploads_folder'.
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+## pytest
+
+import os
+import pytest
+from flask import Flask
+from flask.testing import FlaskClient
+
+# Assuming the Flask app is in a file named 'app.py'
+from app import app
+
+# Define a fixture to set up the Flask app for testing
+@pytest.fixture
+def client() -> FlaskClient:
+    app.config['TESTING'] = True
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'assets', 'uploads_folder')
+    with app.test_client() as client:
+        yield client
+
+
+# Test case to ensure the app is running
+def test_app_is_up(client):
+    response = client.get('/')
+    assert response.status_code == 200  # Check that the app is up and running
+
+
+# Test case to check if the image is served correctly
+def test_get_image(client):
+    # Assume that there is an image named 'line_chart.png' in the 'uploads_folder'
+    filename = 'line_chart.png'
+
+    # Check if the image exists in the directory
+    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    assert os.path.exists(image_path), f"{filename} does not exist in the 'uploads_folder'"
+
+    # Request the image via the Flask route
+    response = client.get(f'/assets/uploads/{filename}')
+
+    # Check if the response status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Check that the content-type is image (this will depend on the file type, assuming PNG here)
+    assert response.content_type == 'image/png'
+
+
+# Test case for a non-existent image (404 Not Found)
+def test_image_not_found(client):
+    non_existent_image = 'non_existent_image.png'
+    
+    # Request a non-existent image
+    response = client.get(f'/assets/uploads/{non_existent_image}')
+    
+    # Check if the response status code is 404 (Not Found)
+    assert response.status_code == 404
+
+
+# Test case for a directory that does not exist (404 Not Found)
+def test_directory_does_not_exist(client):
+    invalid_directory = 'invalid_directory'
+    
+    # Simulate an invalid path (doesn't exist)
+    response = client.get(f'/assets/uploads/{invalid_directory}/image.png')
+    
+    # Check if the response status code is 404 (Not Found)
+    assert response.status_code == 404
+
+
+
+### vue
+
+<template>
+  <div>
+    <img :src="imageUrl" alt="Line Chart" />
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      imageUrl: ''
+    };
+  },
+  mounted() {
+    axios.get('http://localhost:5000/assets/uploads/line_chart.png')
+      .then(response => {
+        this.imageUrl = response.data;  // Assuming the server sends the image path as a response.
+      })
+      .catch(error => console.log(error));
+  }
+}
+</script>
+
+## jest test
+
+import { shallowMount } from '@vue/test-utils';
+import MyComponent from '@/components/MyComponent.vue';  // Update the path if needed
+import axios from 'axios';
+
+// Mock axios
+jest.mock('axios');
+
+describe('MyComponent.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    // Mount the component before each test
+    wrapper = shallowMount(MyComponent);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();  // Clear any mocked calls after each test
+  });
+
+  it('should set imageUrl when the axios request is successful', async () => {
+    // Mock the axios GET request to return a successful response
+    axios.get.mockResolvedValue({ data: 'http://localhost:5000/assets/uploads/line_chart.png' });
+
+    // Wait for the mounted lifecycle hook to finish
+    await wrapper.vm.$nextTick();
+
+    // Check that imageUrl has been updated correctly
+    expect(wrapper.vm.imageUrl).toBe('http://localhost:5000/assets/uploads/line_chart.png');
+  });
+
+  it('should handle an error in the axios request', async () => {
+    // Mock the axios GET request to return an error
+    axios.get.mockRejectedValue(new Error('Request failed'));
+
+    // Wait for the mounted lifecycle hook to finish
+    await wrapper.vm.$nextTick();
+
+    // Check that imageUrl has not been updated (it should remain an empty string)
+    expect(wrapper.vm.imageUrl).toBe('');
+  });
+});
+
+
+

@@ -1,0 +1,168 @@
+<template>
+  <div>
+    <canvas ref="myCanvas" width="500" height="500"></canvas>
+  </div>
+</template>
+
+<script>
+export default {
+  mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Draw a rectangle
+    ctx.fillStyle = 'green';
+    ctx.fillRect(50, 50, 200, 100); // Draw rectangle at (50, 50) with width 200 and height 100
+  }
+};
+</script>
+
+### jest test
+
+import { shallowMount } from '@vue/test-utils';
+import CanvasComponent from '@/components/CanvasComponent.vue'; // Adjust the import path if necessary
+
+describe('CanvasComponent', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    // Mock the canvas context
+    const canvas = {
+      getContext: jest.fn(() => ({
+        fillRect: jest.fn(),  // Mock fillRect method
+      })),
+    };
+
+    global.HTMLCanvasElement.prototype.getContext = canvas.getContext;
+
+    // Mount the component
+    wrapper = shallowMount(CanvasComponent);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('draws a rectangle on the canvas when mounted', async () => {
+    // Trigger mounted lifecycle by waiting for the component to finish rendering
+    await wrapper.vm.$nextTick();
+
+    // Access the canvas element and its context
+    const canvas = wrapper.find('canvas').element;
+    const ctx = canvas.getContext('2d');
+
+    // Assert fillRect was called with the correct arguments
+    expect(ctx.fillRect).toHaveBeenCalledWith(50, 50, 200, 100);
+  });
+});
+
+
+
+-----------
+
+<template>
+  <div>
+    <canvas ref="myCanvas" width="500" height="500"></canvas>
+  </div>
+</template>
+
+<script>
+export default {
+  mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Sample data for 10 rectangles
+    const rectangles = [
+      { width: 50, height: 30, x: 50, y: 50, label: '1', color: 'red' },
+      { width: 60, height: 40, x: 150, y: 50, label: '2', color: 'blue' },
+      { width: 70, height: 50, x: 250, y: 50, label: '3', color: 'green' },
+      { width: 80, height: 60, x: 350, y: 50, label: '4', color: 'yellow' },
+      { width: 90, height: 70, x: 450, y: 50, label: '5', color: 'orange' },
+      { width: 100, height: 80, x: 50, y: 150, label: '6', color: 'purple' },
+      { width: 110, height: 90, x: 200, y: 150, label: '7', color: 'pink' },
+      { width: 120, height: 100, x: 350, y: 150, label: '8', color: 'cyan' },
+      { width: 130, height: 110, x: 50, y: 250, label: '9', color: 'brown' },
+      { width: 140, height: 120, x: 200, y: 250, label: '10', color: 'gray' }
+    ];
+
+    // Loop through the data to draw each rectangle
+    rectangles.forEach(rect => {
+      // Draw the rectangle
+      ctx.fillStyle = rect.color;
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the label
+      ctx.fillStyle = 'black'; // Set label color
+      ctx.font = '16px Arial'; // Set font size
+      ctx.fillText(rect.label, rect.x + rect.width / 2 - 8, rect.y + rect.height / 2 + 5); // Center the label
+    });
+  }
+};
+</script>
+
+
+#### jest test
+
+import { shallowMount } from '@vue/test-utils';
+import CanvasComponent from '@/components/CanvasComponent.vue'; // Adjust the import path if necessary
+
+describe('CanvasComponent', () => {
+  let wrapper;
+  let mockCtx;
+
+  beforeEach(() => {
+    // Mock the canvas context and its methods
+    mockCtx = {
+      fillRect: jest.fn(),
+      fillText: jest.fn(),
+      // Add other context methods you might use in the component here
+    };
+
+    // Mock the getContext method to return our mocked context
+    const canvas = {
+      getContext: jest.fn(() => mockCtx),
+    };
+
+    global.HTMLCanvasElement.prototype.getContext = canvas.getContext;
+
+    // Mount the component
+    wrapper = shallowMount(CanvasComponent);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('draws 10 rectangles with labels on the canvas when mounted', async () => {
+    // Trigger mounted lifecycle by waiting for the component to finish rendering
+    await wrapper.vm.$nextTick();
+
+    // Expected sample data for rectangles
+    const rectangles = [
+      { width: 50, height: 30, x: 50, y: 50, label: '1', color: 'red' },
+      { width: 60, height: 40, x: 150, y: 50, label: '2', color: 'blue' },
+      { width: 70, height: 50, x: 250, y: 50, label: '3', color: 'green' },
+      { width: 80, height: 60, x: 350, y: 50, label: '4', color: 'yellow' },
+      { width: 90, height: 70, x: 450, y: 50, label: '5', color: 'orange' },
+      { width: 100, height: 80, x: 50, y: 150, label: '6', color: 'purple' },
+      { width: 110, height: 90, x: 200, y: 150, label: '7', color: 'pink' },
+      { width: 120, height: 100, x: 350, y: 150, label: '8', color: 'cyan' },
+      { width: 130, height: 110, x: 50, y: 250, label: '9', color: 'brown' },
+      { width: 140, height: 120, x: 200, y: 250, label: '10', color: 'gray' }
+    ];
+
+    // Check that fillRect and fillText are called with the correct parameters for each rectangle
+    rectangles.forEach(rect => {
+      // Verify fillRect is called with the expected arguments
+      expect(mockCtx.fillRect).toHaveBeenCalledWith(rect.x, rect.y, rect.width, rect.height);
+
+      // Verify fillText is called with the expected label position
+      const expectedTextX = rect.x + rect.width / 2 - 8;
+      const expectedTextY = rect.y + rect.height / 2 + 5;
+      expect(mockCtx.fillText).toHaveBeenCalledWith(rect.label, expectedTextX, expectedTextY);
+    });
+  });
+});
+
+

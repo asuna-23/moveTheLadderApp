@@ -1,0 +1,312 @@
+<template>
+  <b-navbar variant="dark" class="bg-primary">
+    <b-container>
+      <!-- App Title -->
+      <b-navbar-brand>
+        <CommonLabel text="My App Title" labelClass="text-white fw-bold" />
+      </b-navbar-brand>
+
+      <!-- Date and Time -->
+      <b-navbar-nav class="ms-auto">
+        <b-nav-item>
+          <CommonLabel :text="currentDate" labelClass="text-white me-3" />
+          <CommonLabel :text="currentTime" labelClass="text-white" />
+        </b-nav-item>
+      </b-navbar-nav>
+    </b-container>
+  </b-navbar>
+</template>
+
+<script>
+import CommonLabel from "../../common/CommonLabel.vue";
+import {
+  BContainer,
+  BNavbar,
+  BNavbarNav,
+  BNavbarBrand,
+  BNavItem,
+} from "bootstrap-vue-next";
+// import LabelComponent from "./LabelComponent.vue";
+
+export default {
+  name: "NavBarComponent",
+  components: {
+    CommonLabel,
+  },
+  data() {
+    return {
+      currentDate: "",
+      currentTime: "",
+    };
+  },
+  methods: {
+    updateDateTime() {
+      const now = new Date();
+      this.currentDate = now.toISOString().split("T")[0]; // YYYY-MM-DD format
+      this.currentTime = now.toTimeString().split(" ")[0]; // 24hr HH:mm:ss
+    },
+  },
+  mounted() {
+    // Initial Date and Time Setup
+    this.updateDateTime();
+
+    // Update every second
+    setInterval(this.updateDateTime, 1000);
+  },
+};
+</script>
+
+<!-- 
+
+methods: {
+    updateDateTime(format = 'YYYY-MM-DD') {
+      const now = new Date();
+  
+      // Extract year, month, and day
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+      const day = String(now.getDate()).padStart(2, '0');
+  
+      // Handle date formatting
+      switch (format) {
+        case 'YYYY-DD-MM':
+          this.currentDate = `${year}-${day}-${month}`;
+          break;
+        case 'MM-DD-YYYY':
+          this.currentDate = `${month}-${day}-${year}`;
+          break;
+        default: // Default to 'YYYY-MM-DD'
+          this.currentDate = `${year}-${month}-${day}`;
+      }
+  
+      // Time in HH:mm:ss format
+      this.currentTime = now.toTimeString().split(' ')[0];
+    },
+  },
+
+  mounted() {
+  // Set a desired default date format, e.g., MM-DD-YYYY
+  this.updateDateTime('MM-DD-YYYY');
+
+  // Update the date and time every second
+  setInterval(() => this.updateDateTime('MM-DD-YYYY'), 1000);
+}
+
+
+-->
+
+<!-- test1 -->
+
+<!-- 
+
+import { shallowMount } from '@vue/test-utils';
+import NavbarComponent from '@/components/NavbarComponent.vue'; // Adjust path as needed
+
+jest.useFakeTimers(); // Mock timers for setInterval
+
+describe('NavbarComponent.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(NavbarComponent);
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+  });
+
+  it('should correctly format the date in YYYY-MM-DD', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate); // Mock the current date
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentDate).toBe('2024-12-05');
+  });
+
+  it('should correctly format the time in HH:mm:ss (24-hour format)', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate); // Mock the current time
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentTime).toBe('10:15:30');
+  });
+
+  it('should call updateDateTime when mounted', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(updateDateTimeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should set up an interval to call updateDateTime every second', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+    jest.advanceTimersByTime(3000); // Simulate 3 seconds
+    expect(updateDateTimeSpy).toHaveBeenCalledTimes(4); // Called initially + 3 times (1/sec)
+  });
+});
+
+-->
+
+<!-- test2 one describe block -->
+
+<!-- 
+
+import { shallowMount } from '@vue/test-utils';
+import NavbarComponent from '@/components/NavbarComponent.vue'; // Adjust the path as needed
+
+jest.useFakeTimers(); // Mock timers for setInterval
+
+describe('NavbarComponent.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(NavbarComponent);
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+    jest.clearAllMocks();
+  });
+
+  it('should correctly format the date in YYYY-MM-DD by default', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentDate).toBe('2024-12-05');
+  });
+
+  it('should correctly format the date in YYYY-DD-MM', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime('YYYY-DD-MM');
+    expect(wrapper.vm.currentDate).toBe('2024-05-12');
+  });
+
+  it('should correctly format the date in MM-DD-YYYY', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime('MM-DD-YYYY');
+    expect(wrapper.vm.currentDate).toBe('12-05-2024');
+  });
+
+  it('should correctly format the time in HH:mm:ss (24-hour format)', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentTime).toBe('10:15:30');
+  });
+
+  it('should call updateDateTime with MM-DD-YYYY when mounted', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(updateDateTimeSpy).toHaveBeenCalledWith('MM-DD-YYYY');
+  });
+
+  it('should set up an interval to call updateDateTime every second', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+    jest.advanceTimersByTime(3000); // Simulate 3 seconds
+    expect(updateDateTimeSpy).toHaveBeenCalledTimes(4); // Initial + 3 times
+  });
+});
+
+
+-->
+
+<!-- test3 separated describe -->
+
+<!-- 
+
+import { shallowMount } from '@vue/test-utils';
+import NavbarComponent from '@/components/NavbarComponent.vue'; // Adjust the path as needed
+
+jest.useFakeTimers(); // Mock timers for setInterval
+
+describe('NavbarComponent.vue - updateDateTime()', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(NavbarComponent);
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+    jest.clearAllMocks();
+  });
+
+  it('should correctly format the date in YYYY-MM-DD by default', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentDate).toBe('2024-12-05');
+  });
+
+  it('should correctly format the date in YYYY-DD-MM', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime('YYYY-DD-MM');
+    expect(wrapper.vm.currentDate).toBe('2024-05-12');
+  });
+
+  it('should correctly format the date in MM-DD-YYYY', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime('MM-DD-YYYY');
+    expect(wrapper.vm.currentDate).toBe('12-05-2024');
+  });
+
+  it('should correctly format the time in HH:mm:ss (24-hour format)', () => {
+    const mockDate = new Date('2024-12-05T10:15:30Z');
+    jest.setSystemTime(mockDate);
+
+    wrapper.vm.updateDateTime();
+    expect(wrapper.vm.currentTime).toBe('10:15:30');
+  });
+});
+
+describe('NavbarComponent.vue - mounted()', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(NavbarComponent);
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+    jest.clearAllMocks();
+  });
+
+  it('should call updateDateTime with MM-DD-YYYY when mounted', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(updateDateTimeSpy).toHaveBeenCalledWith('MM-DD-YYYY');
+  });
+
+  it('should set up an interval to call updateDateTime every second', () => {
+    const updateDateTimeSpy = jest.spyOn(wrapper.vm, 'updateDateTime');
+
+    wrapper.vm.mounted(); // Call mounted manually
+    expect(setInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+    jest.advanceTimersByTime(3000); // Simulate 3 seconds
+    expect(updateDateTimeSpy).toHaveBeenCalledTimes(4); // Initial + 3 times
+  });
+});
+
+-->

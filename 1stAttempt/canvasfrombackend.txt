@@ -1,0 +1,300 @@
+import os
+from flask import Flask, send_from_directory, jsonify
+import random
+
+app = Flask(__name__)
+
+# Set the path to the 'uploads_folder' inside 'assets'
+UPLOAD_FOLDER = os.path.join(os.getcwd(), 'assets', 'uploads_folder')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Example route to simulate fetching rectangle data from a database
+@app.route('/rectangles', methods=['GET'])
+def get_rectangles():
+    """
+    Simulate fetching rectangle data from a database.
+    """
+    rectangles = []
+    colors = ['green', 'yellow', 'red']
+    for i in range(14):  # Simulate 14 rectangles
+        rectangle = {
+            'x': random.randint(50, 500),
+            'y': random.randint(50, 300),
+            'width': random.randint(50, 150),
+            'height': random.randint(30, 100),
+            'color': random.choice(colors),
+            'label': f"Rectangle {i + 1}"
+        }
+        rectangles.append(rectangle)
+    return jsonify(rectangles)
+
+# Route to serve the image from the uploads folder
+@app.route('/assets/uploads/<filename>')
+def get_image(filename):
+    """
+    Serve the image from the 'uploads_folder'.
+    """
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+------------
+
+<template>
+  <div>
+    <!-- Canvas to display image and draw rectangles -->
+    <canvas ref="myCanvas" width="600" height="400"></canvas>
+  </div>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  data() {
+    return {
+      imageUrl: '', // Image URL from backend
+      rectangles: [] // Array to store rectangle data
+    };
+  },
+  mounted() {
+    // Fetch the image from the backend
+    axios.get('http://localhost:5000/assets/uploads/line_chart.png', { responseType: 'blob' })
+      .then(response => {
+        const imageUrl = URL.createObjectURL(response.data);
+        this.imageUrl = imageUrl;
+
+        // After image is loaded, fetch rectangle data and draw on canvas
+        const canvas = this.$refs.myCanvas;
+        const ctx = canvas.getContext('2d');
+        const image = new Image();
+        image.src = this.imageUrl;
+
+        image.onload = () => {
+          // Draw the image on the canvas
+          ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          // Fetch rectangle data from the backend
+          axios.get('http://localhost:5000/rectangles')
+            .then(response => {
+              this.rectangles = response.data; // Store rectangle data
+
+              // Draw each rectangle with a label on the canvas
+              this.rectangles.forEach(rect => {
+                ctx.fillStyle = rect.color; // Set rectangle color
+                ctx.fillRect(rect.x, rect.y, rect.width, rect.height); // Draw rectangle
+
+                // Set text properties
+                ctx.fillStyle = 'black'; // Set text color
+                ctx.font = '16px Arial'; // Set font size and style
+                ctx.fillText(rect.label, rect.x + 5, rect.y + 20); // Draw label inside the rectangle
+              });
+            })
+            .catch(error => console.error(error));
+        };
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  }
+};
+</script>
+
+
+#### pytest
+
+import pytest
+import json
+from app import app  # Import your Flask app
+
+
+# Create a fixture for the Flask app
+@pytest.fixture
+def client():
+    with app.test_client() as client:
+        yield client
+
+
+# Test /rectangles route
+def test_get_rectangles(client):
+    """
+    Test the '/rectangles' route to ensure it returns 14 rectangles with correct properties.
+    """
+    response = client.get('/rectangles')
+    
+    # Check that the status code is 200 (OK)
+    assert response.status_code == 200
+    
+    # Parse the response JSON
+    rectangles = json.loads(response.data)
+    
+    # Ensure there are exactly 14 rectangles
+    assert len(rectangles) == 14
+    
+    # Check that each rectangle has the expected properties
+    for rectangle in rectangles:
+        assert 'x' in rectangle
+        assert 'y' in rectangle
+        assert 'width' in rectangle
+        assert 'height' in rectangle
+        assert 'color' in rectangle
+        assert 'label' in rectangle
+        
+        # Ensure x, y, width, height are within expected range
+        assert 50 <= rectangle['x'] <= 500
+        assert 50 <= rectangle['y'] <= 300
+        assert 50 <= rectangle['width'] <= 150
+        assert 30 <= rectangle['height'] <= 100
+        
+        # Ensure color is one of the allowed values
+        assert rectangle['color'] in ['green', 'yellow', 'red']
+        
+        # Ensure label format is correct
+        assert rectangle['label'] == f"Rectangle {rectangles.index(rectangle) + 1}"
+
+
+# Test /assets/uploads/<filename> route
+def test_get_image(client):
+    """
+    Test the '/assets/uploads/<filename>' route to ensure it serves an image correctly.
+    """
+    # Assuming you have an image called 'line_chart.png' in your 'uploads_folder'
+    filename = 'line_chart.png'
+    response = client.get(f'/assets/uploads/{filename}')
+    
+    # Check if the status code is 200 (OK)
+    assert response.status_code == 200
+    
+    # Check that the content type is image (e.g., PNG image)
+    assert 'image/png' in response.content_type
+    
+    # Check if the file actually exists in the uploads folder (optional but good to check)
+    assert os.path.exists(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+
+# Test invalid filename (if the file does not exist)
+def test_get_image_invalid_filename(client):
+    """
+    Test the '/assets/uploads/<filename>' route with an invalid filename.
+    """
+    invalid_filename = 'non_existent_image.png'
+    response = client.get(f'/assets/uploads/{invalid_filename}')
+    
+    # Check if the status code is 404 (Not Found)
+    assert response.status_code == 404
+
+
+#### jest test
+
+import { mount } from '@vue/test-utils';
+import CanvasComponent from '@/components/CanvasComponent.vue'; // Adjust import path
+import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+
+describe('CanvasComponent.vue', () => {
+  let mock;
+
+  beforeAll(() => {
+    // Set up axios mock adapter to simulate backend API calls
+    mock = new MockAdapter(axios);
+  });
+
+  afterEach(() => {
+    mock.reset(); // Reset the mock after each test case
+  });
+
+  it('should render the canvas element', () => {
+    const wrapper = mount(CanvasComponent);
+    const canvas = wrapper.find('canvas');
+    expect(canvas.exists()).toBe(true); // Check if canvas is rendered
+  });
+
+  it('should fetch image and draw it on canvas', async () => {
+    const imageUrl = 'http://localhost:5000/assets/uploads/line_chart.png';
+
+    // Mock image fetching from backend
+    mock.onGet(imageUrl).reply(200, new Blob(['image data'], { type: 'image/png' }));
+
+    const wrapper = mount(CanvasComponent);
+
+    // Wait for image loading
+    await wrapper.vm.$nextTick();
+
+    // Check if the image URL is set correctly
+    expect(wrapper.vm.imageUrl).toBe(imageUrl);
+
+    // Here, you would need to check if the image is drawn on canvas, 
+    // but Jest testing can't directly verify canvas drawing, so instead,
+    // you can mock canvas context methods like `drawImage`.
+    const canvas = wrapper.find('canvas');
+    const ctx = canvas.element.getContext('2d');
+    const drawImageMock = jest.spyOn(ctx, 'drawImage');
+
+    // Verify if drawImage was called with the expected arguments
+    expect(drawImageMock).toHaveBeenCalled();
+  });
+
+  it('should fetch rectangle data and draw rectangles on canvas', async () => {
+    // Sample rectangle data returned from backend
+    const rectangleData = [
+      { x: 50, y: 60, width: 100, height: 50, color: 'green', label: 'Rectangle 1' },
+      { x: 200, y: 100, width: 150, height: 70, color: 'yellow', label: 'Rectangle 2' },
+    ];
+
+    // Mock rectangle data fetching from backend
+    mock.onGet('http://localhost:5000/rectangles').reply(200, rectangleData);
+
+    const wrapper = mount(CanvasComponent);
+
+    // Wait for rectangle data fetching and drawing to complete
+    await wrapper.vm.$nextTick();
+
+    const canvas = wrapper.find('canvas');
+    const ctx = canvas.element.getContext('2d');
+    const fillRectMock = jest.spyOn(ctx, 'fillRect');
+    const fillTextMock = jest.spyOn(ctx, 'fillText');
+
+    // Verify that fillRect and fillText are called with expected arguments
+    expect(fillRectMock).toHaveBeenCalledTimes(rectangleData.length);
+    expect(fillTextMock).toHaveBeenCalledTimes(rectangleData.length);
+
+    rectangleData.forEach((rect, index) => {
+      // Check if each rectangle is drawn
+      expect(fillRectMock).toHaveBeenCalledWith(rect.x, rect.y, rect.width, rect.height);
+
+      // Check if each label is drawn
+      expect(fillTextMock).toHaveBeenCalledWith(rect.label, rect.x + 5, rect.y + 20);
+    });
+  });
+
+  it('should handle image fetch error gracefully', async () => {
+    // Mock image fetching error
+    mock.onGet('http://localhost:5000/assets/uploads/line_chart.png').reply(500);
+
+    const wrapper = mount(CanvasComponent);
+
+    // Wait for the image fetch to complete
+    await wrapper.vm.$nextTick();
+
+    // Check that the image URL is empty (image fetch failed)
+    expect(wrapper.vm.imageUrl).toBe('');
+  });
+
+  it('should handle rectangle data fetch error gracefully', async () => {
+    // Mock rectangle data fetching error
+    mock.onGet('http://localhost:5000/rectangles').reply(500);
+
+    const wrapper = mount(CanvasComponent);
+
+    // Wait for rectangle data fetching
+    await wrapper.vm.$nextTick();
+
+    // Ensure rectangles array is still empty (fetch failed)
+    expect(wrapper.vm.rectangles.length).toBe(0);
+  });
+});
+
+
+
