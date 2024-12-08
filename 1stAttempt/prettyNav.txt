@@ -1,0 +1,60 @@
+<template>
+  <v-layout>
+    <!-- App Bar with Date and Time -->
+    <v-app-bar color="grey-darken-4" density="comfortable">
+      <!-- App Title -->
+      <v-app-bar-title class="text-white fw-bold text-h5"
+        >My App Title</v-app-bar-title
+      >
+
+      <v-spacer></v-spacer>
+
+      <!-- Date and Time -->
+      <span class="text-white me-3 text-subtitle-2"
+        >{{ currentDate }} {{ currentTime }}</span
+      >
+    </v-app-bar>
+
+    <v-main>
+      <!-- main content here -->
+      <!-- left side is the line chart -->
+      <!-- right side is the data table -->
+    </v-main>
+  </v-layout>
+</template>
+
+<script>
+  export default {
+    name: 'NavBarComponent',
+    data() {
+      return {
+        currentDate: '',
+        currentTime: '',
+      }
+    },
+    methods: {
+      updateDateTime() {
+        const now = new Date()
+        this.currentDate = now.toISOString().split('T')[0] // YYYY-MM-DD format
+        this.currentTime = now.toTimeString().split(' ')[0] // 24hr HH:mm:ss
+      },
+    },
+    mounted() {
+      // Initial Date and Time Setup
+      this.updateDateTime()
+
+      // Update every second
+      setInterval(this.updateDateTime, 1000)
+    },
+  }
+</script>
+
+<style scoped>
+  .me-3 {
+    margin-right: 1rem;
+  }
+
+  .fw-bold {
+    font-weight: bold;
+  }
+</style>
