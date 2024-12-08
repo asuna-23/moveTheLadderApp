@@ -207,4 +207,71 @@ export default {
   }
 };
 
+################################# trial 2:  label = rect.id ; color = rect.operatingStatus
+
+export default {
+  data() {
+    return {
+      rectangles: [] // Placeholder for API data
+    };
+  },
+  async mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Fetch the data from the API
+    const apiResponse = await fetch("https://your-api-url.com/data");
+    const apiData = await apiResponse.json();
+
+    // Populate the rectangles array with the API response
+    this.rectangles = apiData;
+
+    // Helper function to map operating status to colors
+    const getStatusColor = (status) => {
+      switch (status.toLowerCase()) {
+        case 'running':
+          return 'green';
+        case 'in preparation':
+          return 'yellow';
+        case 'stop':
+          return 'red';
+        default:
+          return 'gray'; // Default color if status is unknown
+      }
+    };
+
+    // Helper function to draw a circle for the label
+    const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, x, y);
+    };
+
+    // Draw the rectangles based on the API response
+    this.rectangles.forEach(rect => {
+      // Determine the color based on the operating status
+      const rectColor = getStatusColor(rect.operatingStatus);
+
+      // Draw the rectangle
+      ctx.fillStyle = rectColor;
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the label using the rectangle's `id`
+      const circleX = rect.x + rect.width / 2; // Circle center X
+      const circleY = rect.y + rect.height / 2; // Circle center Y
+      drawCircleLabel(ctx, circleX, circleY, 15, rect.id, 'white', 'black');
+    });
+  }
+};
 
