@@ -1,0 +1,95 @@
+# back
+
+from flask import Flask, Blueprint, jsonify
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from yourmodels import Rectangle  # Import your SQLAlchemy models
+
+app = Flask(__name__)
+blueprint = Blueprint('api', __name__)
+
+# Database configuration
+DATABASE_URI = 'postgresql://user:password@localhost/yourdatabase'
+engine = create_engine(DATABASE_URI)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+# Helper function to map operatingStatus to color
+def get_status_color(status):
+    mapping = {
+        'running': 'green',
+        'in preparation': 'yellow',
+        'stop': 'red'
+    }
+    return mapping.get(status.lower(), 'gray')
+
+# API endpoint
+@blueprint.route('/api/rectangles', methods=['GET'])
+def get_rectangles():
+    rectangles = session.query(Rectangle).all()
+    response = []
+    for rect in rectangles:
+        response.append({
+            'id': rect.id,
+            'x': rect.x,
+            'y': rect.y,
+            'width': rect.width,
+            'height': rect.height,
+            'color': get_status_color(rect.operating_status),
+            'label': rect.id
+        })
+    return jsonify(response)
+
+app.register_blueprint(blueprint)
+
+
+// front
+
+export default {
+  data() {
+    return {
+      rectangles: [] // Placeholder for API data
+    };
+  },
+  async mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Fetch the data from the API
+    const apiResponse = await fetch("https://your-api-url.com/api/rectangles");
+    const apiData = await apiResponse.json();
+
+    // Populate the rectangles array with the API response
+    this.rectangles = apiData;
+
+    // Helper function to draw a circle for the label
+    const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, x, y);
+    };
+
+    // Draw the rectangles based on the API response
+    this.rectangles.forEach(rect => {
+      // Draw the rectangle
+      ctx.fillStyle = rect.color;
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the label using the rectangle's `label`
+      const circleX = rect.x + rect.width / 2; // Circle center X
+      const circleY = rect.y + rect.height / 2; // Circle center Y
+      drawCircleLabel(ctx, circleX, circleY, 15, rect.label, 'white', 'black');
+    });
+  }
+};
