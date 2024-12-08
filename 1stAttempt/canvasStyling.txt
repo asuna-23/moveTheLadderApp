@@ -1,0 +1,210 @@
+mounted() {
+  const canvas = this.$refs.myCanvas;
+  const ctx = canvas.getContext('2d');
+
+  // Sample data for rectangles
+  const rectangles = [
+    { width: 50, height: 30, x: 50, y: 50, label: '1', color: 'red' },
+    { width: 60, height: 40, x: 150, y: 50, label: '2', color: 'blue' },
+    { width: 70, height: 50, x: 250, y: 50, label: '3', color: 'green' },
+    { width: 80, height: 60, x: 350, y: 50, label: '4', color: 'yellow' },
+    { width: 90, height: 70, x: 450, y: 50, label: '5', color: 'orange' },
+    { width: 100, height: 80, x: 50, y: 150, label: '6', color: 'purple' },
+    { width: 110, height: 90, x: 200, y: 150, label: '7', color: 'pink' },
+    { width: 120, height: 100, x: 350, y: 150, label: '8', color: 'cyan' },
+    { width: 130, height: 110, x: 50, y: 250, label: '9', color: 'brown' },
+    { width: 140, height: 120, x: 200, y: 250, label: '10', color: 'gray' }
+  ];
+
+  // Loop through the data to draw each rectangle
+  rectangles.forEach(rect => {
+    // Draw the rectangle
+    ctx.fillStyle = rect.color;
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+    // Style and draw the label
+    ctx.font = 'bold 16px Arial'; // Font size and style
+    ctx.textAlign = 'center';     // Center horizontally
+    ctx.textBaseline = 'middle';  // Center vertically
+    ctx.fillStyle = 'black';      // Text color
+
+    const textX = rect.x + rect.width / 2; // Center horizontally within the rectangle
+    const textY = rect.y + rect.height / 2; // Center vertically within the rectangle
+    ctx.fillText(rect.label, textX, textY); // Draw the label
+  });
+}
+
+
+/////////////////////
+
+mounted() {
+  const canvas = this.$refs.myCanvas;
+  const ctx = canvas.getContext('2d');
+
+  // Sample data for rectangles
+  const rectangles = [
+    { width: 50, height: 30, x: 50, y: 50, label: '1', color: 'red' },
+    { width: 60, height: 40, x: 150, y: 50, label: '2', color: 'blue' },
+    { width: 70, height: 50, x: 250, y: 50, label: '3', color: 'green' },
+    { width: 80, height: 60, x: 350, y: 50, label: '4', color: 'yellow' },
+    { width: 90, height: 70, x: 450, y: 50, label: '5', color: 'orange' },
+    { width: 100, height: 80, x: 50, y: 150, label: '6', color: 'purple' },
+    { width: 110, height: 90, x: 200, y: 150, label: '7', color: 'pink' },
+    { width: 120, height: 100, x: 350, y: 150, label: '8', color: 'cyan' },
+    { width: 130, height: 110, x: 50, y: 250, label: '9', color: 'brown' },
+    { width: 140, height: 120, x: 200, y: 250, label: '10', color: 'gray' }
+  ];
+
+  // Helper function to draw a rounded rectangle
+  const drawRoundedRect = (ctx, x, y, width, height, radius, fillStyle, strokeStyle) => {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    if (fillStyle) {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+    if (strokeStyle) {
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  };
+
+  // Loop through the data to draw each rectangle and its label
+  rectangles.forEach(rect => {
+    // Draw the rectangle
+    ctx.fillStyle = rect.color;
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+    // Calculate label dimensions and position
+    const labelWidth = 30; // Width of the label box
+    const labelHeight = 20; // Height of the label box
+    const labelX = rect.x + rect.width / 2 - labelWidth / 2; // Center horizontally
+    const labelY = rect.y + rect.height / 2 - labelHeight / 2; // Center vertically
+
+    // Draw rounded rectangle for the label background
+    drawRoundedRect(ctx, labelX, labelY, labelWidth, labelHeight, 10, 'white', 'black'); // White fill, black border
+
+    // Style and draw the label text
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black'; // Text color
+    ctx.fillText(rect.label, rect.x + rect.width / 2, rect.y + rect.height / 2); // Center text
+  });
+}
+
+
+############
+
+mounted() {
+  const canvas = this.$refs.myCanvas;
+  const ctx = canvas.getContext('2d');
+
+  // Define the data for 14 rectangles
+  const rectangles = Array.from({ length: 14 }, (_, index) => ({
+    label: index + 1, // Rectangle labels (1-14)
+    width: 100, // Width of the rectangle
+    height: 50, // Height of the rectangle
+    color: index % 3 === 0 ? 'red' : index % 3 === 1 ? 'yellow' : 'green', // Alternate colors (red, yellow, green)
+    x: 120 * (index % 2), // X-coordinate (alternating left and right)
+    y: Math.floor(index / 2) * 70 // Y-coordinate (stacks vertically with spacing)
+  }));
+
+  // Helper function to draw a circle for the label
+  const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+    // Draw the circle
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = fillStyle;
+    ctx.fill();
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Draw the text inside the circle
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'black';
+    ctx.fillText(label, x, y);
+  };
+
+  // Draw the rectangles and labels
+  rectangles.forEach(rect => {
+    // Draw the rectangle
+    ctx.fillStyle = rect.color;
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+    // Draw the label inside a circle
+    const circleX = rect.x + rect.width / 2; // Circle center X (middle of the rectangle)
+    const circleY = rect.y + rect.height / 2; // Circle center Y (middle of the rectangle)
+    drawCircleLabel(ctx, circleX, circleY, 15, rect.label, 'white', 'black'); // Circle with label
+  });
+}
+
+
+####################### trial this ##############
+
+export default {
+  data() {
+    return {
+      rectangles: [] // Placeholder for API data
+    };
+  },
+  async mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Fetch the data from the API
+    const apiResponse = await fetch("https://your-api-url.com/data");
+    const apiData = await apiResponse.json();
+
+    // Assume the API provides an array of rectangle data
+    // Example response: [{ width, height, x, y, label, color }, ...]
+
+    this.rectangles = apiData;
+
+    // Helper function to draw a circle for the label
+    const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, x, y);
+    };
+
+    // Draw the rectangles based on the API response
+    this.rectangles.forEach(rect => {
+      // Draw the rectangle
+      ctx.fillStyle = rect.color;
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the label inside a circle
+      const circleX = rect.x + rect.width / 2; // Circle center X
+      const circleY = rect.y + rect.height / 2; // Circle center Y
+      drawCircleLabel(ctx, circleX, circleY, 15, rect.label, 'white', 'black');
+    });
+  }
+};
+
+
