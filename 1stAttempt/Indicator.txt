@@ -1,3 +1,97 @@
+///// 1
+
+<script>
+import { FetchAPI } from '@/utility/apiRequest'
+
+export default {
+  name: 'OperationStatusScreen',
+  data() {
+    return {
+      imageUrl: null,
+      rectangles: [
+        // Rectangle data (same as provided)
+      ],
+      lastOperationStatus: 1, // Default to some initial status
+    }
+  },
+  mounted() {
+    this.fetchImage()
+    this.updateOperationStatus() // Initialize based on initial data
+  },
+  methods: {
+    async fetchImage() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/assets/images/line_chart.png', {
+          responseType: 'blob',
+        })
+        this.imageUrl = URL.createObjectURL(response)
+        this.createCanvas(this.imageUrl)
+      } catch (err) {
+        console.log(err)
+      }
+    },
+    async fetchProcessCoordinates() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-coordinates')
+        this.rectangles = [...response.data]
+        this.updateOperationStatus() // Update after fetching new data
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    updateOperationStatus() {
+      if (this.rectangles.length === 0) return
+
+      // Get the rectangle with the highest process_id
+      const lastRectangle = this.rectangles.reduce((prev, curr) =>
+        prev.process_id > curr.process_id ? prev : curr
+      )
+
+      this.lastOperationStatus = lastRectangle.operation_status
+
+      // Update the background color dynamically
+      const operationStatusElement = document.querySelector('.operationStatus')
+      if (operationStatusElement) {
+        operationStatusElement.style.backgroundColor = this.determineColor(
+          this.lastOperationStatus
+        )
+        operationStatusElement.textContent = this.getStatusLabel(
+          this.lastOperationStatus
+        )
+      }
+    },
+    determineColor(status) {
+      switch (status) {
+        case 1:
+          return 'green'
+        case 2:
+          return '#FFCA37'
+        case 3:
+          return 'red'
+        default:
+          return 'gray'
+      }
+    },
+    getStatusLabel(status) {
+      switch (status) {
+        case 1:
+          return '正常稼働中' // Normal Operation
+        case 2:
+          return '注意稼働中' // Caution
+        case 3:
+          return '異常発生中' // Error
+        default:
+          return '未定義' // Undefined
+      }
+    },
+  },
+}
+</script>
+
+///////////////// 2
+
 <template>
   <v-container fluid>
     <v-simple-table class="custom-table">
@@ -181,3 +275,179 @@ export default {
   },
 }
 </script>
+
+
+
+//////// test 1
+
+import { shallowMount } from '@vue/test-utils'
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+jest.mock('@/utility/apiRequest', () => ({
+  FetchAPI: jest.fn().mockImplementation(() => ({
+    get: jest.fn(),
+  })),
+}))
+
+describe('OperationStatusScreen', () => {
+  let wrapper
+  let fetchApiMock
+
+  beforeEach(() => {
+    fetchApiMock = new FetchAPI()
+    wrapper = shallowMount(OperationStatusScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('fetchImage sets imageUrl and calls createCanvas', async () => {
+    const mockBlob = new Blob()
+    const mockUrl = 'mockObjectURL'
+    fetchApiMock.get.mockResolvedValueOnce(mockBlob)
+    global.URL.createObjectURL = jest.fn(() => mockUrl)
+
+    await wrapper.vm.fetchImage()
+
+    expect(fetchApiMock.get).toHaveBeenCalledWith('/assets/images/line_chart.png', { responseType: 'blob' })
+    expect(wrapper.vm.imageUrl).toBe(mockUrl)
+    expect(global.URL.createObjectURL).toHaveBeenCalledWith(mockBlob)
+    // You might want to test createCanvas, but you didn't provide it here.
+  })
+
+  it('fetchProcessCoordinates updates rectangles and calls updateOperationStatus', async () => {
+    const mockData = [{ process_id: 1, operation_status: 1 }]
+    fetchApiMock.get.mockResolvedValueOnce({ data: mockData })
+    const updateOperationStatusSpy = jest.spyOn(wrapper.vm, 'updateOperationStatus')
+
+    await wrapper.vm.fetchProcessCoordinates()
+
+    expect(fetchApiMock.get).toHaveBeenCalledWith('/api/get-coordinates')
+    expect(wrapper.vm.rectangles).toEqual(mockData)
+    expect(updateOperationStatusSpy).toHaveBeenCalled()
+  })
+
+  it('updateOperationStatus sets lastOperationStatus based on rectangles', () => {
+    wrapper.setData({
+      rectangles: [
+        { process_id: 1, operation_status: 1 },
+        { process_id: 2, operation_status: 2 },
+      ],
+    })
+
+    wrapper.vm.updateOperationStatus()
+
+    expect(wrapper.vm.lastOperationStatus).toBe(2)
+  })
+
+  it('determineColor returns the correct color based on status', () => {
+    expect(wrapper.vm.determineColor(1)).toBe('green')
+    expect(wrapper.vm.determineColor(2)).toBe('#FFCA37')
+    expect(wrapper.vm.determineColor(3)).toBe('red')
+    expect(wrapper.vm.determineColor(999)).toBe('gray')
+  })
+
+  it('getStatusLabel returns the correct label based on status', () => {
+    expect(wrapper.vm.getStatusLabel(1)).toBe('正常稼働中')
+    expect(wrapper.vm.getStatusLabel(2)).toBe('注意稼働中')
+    expect(wrapper.vm.getStatusLabel(3)).toBe('異常発生中')
+    expect(wrapper.vm.getStatusLabel(999)).toBe('未定義')
+  })
+
+  it('mounted calls fetchImage and updateOperationStatus', () => {
+    const fetchImageSpy = jest.spyOn(wrapper.vm, 'fetchImage')
+    const updateOperationStatusSpy = jest.spyOn(wrapper.vm, 'updateOperationStatus')
+
+    wrapper.vm.$options.mounted[0].call(wrapper.vm)
+
+    expect(fetchImageSpy).toHaveBeenCalled()
+    expect(updateOperationStatusSpy).toHaveBeenCalled()
+  })
+})
+
+
+///////// test 2
+
+import { shallowMount } from '@vue/test-utils'
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+jest.mock('@/utility/apiRequest', () => {
+  return {
+    FetchAPI: jest.fn().mockImplementation(() => ({
+      get: jest.fn((url) => {
+        if (url === '/assets/images/line_chart.png') {
+          return Promise.resolve(new Blob(['image-data']))
+        } else if (url === '/api/get-coordinates') {
+          return Promise.resolve({
+            data: [
+              { width: 70, height: 40, x: 65, y: 515, process_id: 1, operation_status: 1 },
+              { width: 70, height: 40, x: 150, y: 265, process_id: 4, operation_status: 3 },
+            ],
+          })
+        }
+        return Promise.reject(new Error('Unknown API endpoint'))
+      }),
+    })),
+  }
+})
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  test('updateOperationStatus updates color and label correctly', () => {
+    wrapper.setData({
+      rectangles: [
+        { process_id: 1, operation_status: 1 },
+        { process_id: 2, operation_status: 2 },
+        { process_id: 3, operation_status: 3 },
+      ],
+    })
+    wrapper.vm.updateOperationStatus()
+    expect(wrapper.vm.operationStatusColor).toBe('red')
+    expect(wrapper.vm.operationStatusLabel).toBe('異常発生中') // Abnormality detected
+  })
+
+  test('determineColor returns correct color', () => {
+    expect(wrapper.vm.determineColor(1)).toBe('green')
+    expect(wrapper.vm.determineColor(2)).toBe('#FFCA37')
+    expect(wrapper.vm.determineColor(3)).toBe('red')
+    expect(wrapper.vm.determineColor(999)).toBe('gray')
+  })
+
+  test('getStatusLabel returns correct label', () => {
+    expect(wrapper.vm.getStatusLabel(1)).toBe('正常稼働中') // Normal operation
+    expect(wrapper.vm.getStatusLabel(2)).toBe('注意必要') // Requires attention
+    expect(wrapper.vm.getStatusLabel(3)).toBe('異常発生中') // Abnormality detected
+    expect(wrapper.vm.getStatusLabel(999)).toBe('未定義') // Undefined
+  })
+
+  test('fetchImage sets imageUrl and calls createCanvas', async () => {
+    const mockCreateCanvas = jest.fn()
+    wrapper.vm.createCanvas = mockCreateCanvas
+
+    await wrapper.vm.fetchImage()
+
+    expect(wrapper.vm.imageUrl).toContain('blob:')
+    expect(mockCreateCanvas).toHaveBeenCalledWith(wrapper.vm.imageUrl)
+  })
+
+  test('fetchProcessCoordinates updates rectangles and calls updateOperationStatus', async () => {
+    const mockUpdateOperationStatus = jest.spyOn(wrapper.vm, 'updateOperationStatus')
+    await wrapper.vm.fetchProcessCoordinates()
+
+    expect(wrapper.vm.rectangles).toHaveLength(2)
+    expect(wrapper.vm.rectangles[1].process_id).toBe(4)
+    expect(mockUpdateOperationStatus).toHaveBeenCalled()
+  })
+})
