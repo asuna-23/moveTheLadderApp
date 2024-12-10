@@ -1,0 +1,86 @@
+import { shallowMount } from '@vue/test-utils';
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue';
+import { FetchAPI } from '@/utility/apiRequest';
+
+jest.mock('@/utility/apiRequest');
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen);
+  });
+
+  afterEach(() => {
+    wrapper.destroy();
+  });
+
+  it('renders the component correctly', () => {
+    expect(wrapper.find('v-simple-table').exists()).toBe(true);
+    expect(wrapper.find('canvas').attributes('class')).toContain('canvas');
+  });
+
+  it('initializes data correctly', () => {
+    expect(wrapper.vm.imageUrl).toBe(null);
+    expect(wrapper.vm.rectangles).toHaveLength(14);
+  });
+
+  it('calls fetchImage on mounted', async () => {
+    const fetchImageSpy = jest.spyOn(wrapper.vm, 'fetchImage');
+    await wrapper.vm.$nextTick();
+    expect(fetchImageSpy).toHaveBeenCalled();
+  });
+
+  it('fetchImage sets the imageUrl and calls createCanvas', async () => {
+    const mockImageBlob = new Blob();
+    const mockUrl = 'mockImageUrl';
+    const createCanvasSpy = jest.spyOn(wrapper.vm, 'createCanvas');
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn().mockResolvedValueOnce(mockImageBlob),
+    }));
+    URL.createObjectURL = jest.fn().mockReturnValue(mockUrl);
+
+    await wrapper.vm.fetchImage();
+
+    expect(wrapper.vm.imageUrl).toBe(mockUrl);
+    expect(createCanvasSpy).toHaveBeenCalledWith(mockUrl);
+  });
+
+  it('fetchProcessCoordinates updates rectangles', async () => {
+    const mockResponse = { data: [{ width: 80, height: 50, x: 50, y: 50, process_id: 1, operation_status: 2 }] };
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn().mockResolvedValueOnce(mockResponse),
+    }));
+
+    await wrapper.vm.fetchProcessCoordinates();
+
+    expect(wrapper.vm.rectangles).toEqual(mockResponse.data);
+  });
+
+  it('createCanvas draws correctly on the canvas', async () => {
+    const canvasMock = document.createElement('canvas');
+    const ctxMock = canvasMock.getContext('2d');
+    const mockImage = new Image();
+    wrapper.vm.$refs.myCanvas = canvasMock;
+
+    const drawCircleLabelSpy = jest.spyOn(wrapper.vm, 'drawCircleLabel');
+    const determineColorSpy = jest.spyOn(wrapper.vm, 'determineColor').mockReturnValue('green');
+
+    mockImage.onload = jest.fn().mockImplementation(() => {
+      wrapper.vm.rectangles.forEach((rect) => {
+        expect(ctxMock.fillStyle).toBe('green');
+      });
+    });
+
+    await wrapper.vm.createCanvas(mockImage.src);
+
+    expect(drawCircleLabelSpy).toHaveBeenCalled();
+    expect(determineColorSpy).toHaveBeenCalled();
+  });
+
+  it('determineColor returns correct colors based on status', () => {
+    expect(wrapper.vm.determineColor(1)).toBe('green');
+    expect(wrapper.vm.determineColor(2)).toBe('#FFCA37');
+    expect(wrapper.vm.determineColor(3)).toBe('red');
+  });
+});
