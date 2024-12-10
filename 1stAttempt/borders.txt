@@ -1,0 +1,53 @@
+export default {
+  data() {
+    return {
+      rectangles: [] // Placeholder for API data
+    };
+  },
+  async mounted() {
+    const canvas = this.$refs.myCanvas;
+    const ctx = canvas.getContext('2d');
+
+    // Fetch the data from the API
+    const apiResponse = await fetch("https://your-api-url.com/api/rectangles");
+    const apiData = await apiResponse.json();
+
+    // Populate the rectangles array with the API response
+    this.rectangles = apiData;
+
+    // Helper function to draw a circle for the label
+    const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'black';
+      ctx.fillText(label, x, y);
+    };
+
+    // Draw the rectangles based on the API response
+    this.rectangles.forEach(rect => {
+      // Draw the filled rectangle
+      ctx.fillStyle = rect.color;
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the border (outline) for the rectangle
+      ctx.strokeStyle = 'black'; // Set the border color
+      ctx.lineWidth = 2;         // Set the border thickness
+      ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+      // Draw the label using the rectangle's `label`
+      const circleX = rect.x + rect.width / 2; // Circle center X
+      const circleY = rect.y + rect.height / 2; // Circle center Y
+      drawCircleLabel(ctx, circleX, circleY, 15, rect.label, 'white', 'black');
+    });
+  }
+};
