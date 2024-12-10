@@ -205,3 +205,57 @@ describe('Canvas Drawing Component', () => {
     });
   });
 });
+
+
+
+####
+test('createCanvas draws on the canvas', async () => {
+  // Mocking the canvas and context
+  const mockContext = {
+    beginPath: jest.fn(),
+    arc: jest.fn(),
+    closePath: jest.fn(),
+    fill: jest.fn(),
+    stroke: jest.fn(),
+    drawImage: jest.fn(),
+    fillRect: jest.fn(),
+    strokeRect: jest.fn(),
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    fillStyle: '',
+    fillText: jest.fn(),
+  };
+  const mockCanvas = {
+    width: 800,
+    height: 600,
+    getContext: jest.fn().mockReturnValue(mockContext),
+  };
+  wrapper.vm.$refs.myCanvas = mockCanvas;
+
+  // Mocking the Image object
+  const mockImage = {
+    onload: null,
+    src: '',
+  };
+  global.Image = jest.fn(() => mockImage);
+
+  const mockImageUrl = 'http://example.com/image.png';
+  wrapper.vm.rectangles = [
+    { width: 50, height: 50, x: 10, y: 10, process_id: 1, operation_status: 1 },
+  ];
+
+  // Call the createCanvas method
+  wrapper.vm.createCanvas(mockImageUrl);
+
+  // Simulate the image loading
+  expect(mockImage.src).toBe(mockImageUrl);
+  expect(typeof mockImage.onload).toBe('function'); // Ensure onload is assigned
+  mockImage.onload(); // Trigger the onload function
+
+  // Validate the drawing actions
+  expect(mockContext.drawImage).toHaveBeenCalledWith(mockImage, 0, 0, mockCanvas.width, mockCanvas.height);
+  expect(mockContext.fillRect).toHaveBeenCalledWith(10, 10, 50, 50); // Example rectangle
+  expect(mockContext.fillText).toHaveBeenCalledWith('1', 35, 35); // Example label position
+});
+
