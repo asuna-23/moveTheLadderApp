@@ -1,0 +1,96 @@
+import { shallowMount } from '@vue/test-utils';
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue';
+import { FetchAPI } from '@/utility/apiRequest';
+
+jest.mock('@/utility/apiRequest');
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('fetchImage calls API and sets imageUrl', async () => {
+    const mockBlob = new Blob(['image data'], { type: 'image/png' });
+    const mockURL = 'blob:http://localhost/image_url';
+    URL.createObjectURL = jest.fn().mockReturnValue(mockURL);
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn().mockResolvedValue(mockBlob),
+    }));
+
+    await wrapper.vm.fetchImage();
+
+    expect(FetchAPI).toHaveBeenCalled();
+    expect(wrapper.vm.imageUrl).toBe(mockURL);
+    expect(URL.createObjectURL).toHaveBeenCalledWith(mockBlob);
+  });
+
+  test('fetchProcessCoordinates fetches and updates rectangles', async () => {
+    const mockResponse = {
+      data: [
+        { width: 50, height: 50, x: 10, y: 10, process_id: 1, operation_status: 2 },
+      ],
+    };
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn().mockResolvedValue(mockResponse),
+    }));
+
+    await wrapper.vm.fetchProcessCoordinates();
+
+    expect(FetchAPI).toHaveBeenCalled();
+    expect(wrapper.vm.rectangles).toEqual(mockResponse.data);
+  });
+
+  test('createCanvas draws on the canvas', async () => {
+    const mockContext = {
+      beginPath: jest.fn(),
+      arc: jest.fn(),
+      closePath: jest.fn(),
+      fill: jest.fn(),
+      stroke: jest.fn(),
+      drawImage: jest.fn(),
+      fillRect: jest.fn(),
+      strokeRect: jest.fn(),
+      font: '',
+      textAlign: '',
+      textBaseline: '',
+      fillStyle: '',
+      fillText: jest.fn(),
+    };
+    const mockCanvas = {
+      getContext: jest.fn().mockReturnValue(mockContext),
+    };
+    wrapper.vm.$refs.myCanvas = mockCanvas;
+
+    const mockImage = {
+      onload: jest.fn(),
+      src: '',
+    };
+    global.Image = jest.fn(() => mockImage);
+
+    const mockImageUrl = 'http://example.com/image.png';
+    wrapper.vm.rectangles = [
+      { width: 50, height: 50, x: 10, y: 10, process_id: 1, operation_status: 1 },
+    ];
+
+    await wrapper.vm.createCanvas(mockImageUrl);
+
+    expect(mockImage.src).toBe(mockImageUrl);
+    mockImage.onload();
+
+    expect(mockContext.drawImage).toHaveBeenCalled();
+    expect(mockContext.fillRect).toHaveBeenCalled();
+    expect(mockContext.fillText).toHaveBeenCalled();
+  });
+
+  test('determineColor returns correct color for status', () => {
+    expect(wrapper.vm.determineColor(1)).toBe('green');
+    expect(wrapper.vm.determineColor(2)).toBe('#FFCA37');
+    expect(wrapper.vm.determineColor(3)).toBe('red');
+  });
+});
