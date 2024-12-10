@@ -53,3 +53,155 @@ export default {
     });
   }
 };
+
+
+import { shallowMount } from '@vue/test-utils';
+
+describe('Canvas Drawing Component', () => {
+  let wrapper;
+  let mockCanvas;
+  let mockContext;
+  let mockApiResponse;
+
+  beforeEach(() => {
+    // Mock the canvas and its context
+    mockContext = {
+      beginPath: jest.fn(),
+      arc: jest.fn(),
+      closePath: jest.fn(),
+      fillStyle: '',
+      fill: jest.fn(),
+      strokeStyle: '',
+      lineWidth: 0,
+      stroke: jest.fn(),
+      font: '',
+      textAlign: '',
+      textBaseline: '',
+      fillText: jest.fn(),
+      fillRect: jest.fn(),
+      strokeRect: jest.fn(),
+    };
+
+    mockCanvas = {
+      getContext: jest.fn().mockReturnValue(mockContext),
+    };
+
+    // Mock the API response
+    mockApiResponse = [
+      { x: 10, y: 20, width: 100, height: 50, color: 'red', label: 'A' },
+      { x: 150, y: 30, width: 80, height: 40, color: 'blue', label: 'B' },
+    ];
+
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue(mockApiResponse),
+    });
+
+    // Mock refs
+    wrapper = shallowMount({
+      data() {
+        return { rectangles: [] };
+      },
+      async mounted() {
+        const canvas = this.$refs.myCanvas;
+        const ctx = canvas.getContext('2d');
+
+        // Fetch the data from the API
+        const apiResponse = await fetch("https://your-api-url.com/api/rectangles");
+        const apiData = await apiResponse.json();
+
+        // Populate the rectangles array with the API response
+        this.rectangles = apiData;
+
+        // Helper function to draw a circle for the label
+        const drawCircleLabel = (ctx, x, y, radius, label, fillStyle, strokeStyle) => {
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.fillStyle = fillStyle;
+          ctx.fill();
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          ctx.font = 'bold 14px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = 'black';
+          ctx.fillText(label, x, y);
+        };
+
+        // Draw the rectangles based on the API response
+        this.rectangles.forEach((rect, index) => {
+          // Draw the filled rectangle
+          ctx.fillStyle = rect.color;
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+          // Draw the border (outline) for the rectangle
+          ctx.strokeStyle = 'black'; // Set the border color
+          ctx.lineWidth = 2;         // Set the border thickness
+          ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+
+          console.log(`Rectangle at index ${index} has border`);
+
+          // Draw the label using the rectangle's `label`
+          const circleX = rect.x + rect.width / 2; // Circle center X
+          const circleY = rect.y + rect.height / 2; // Circle center Y
+          drawCircleLabel(ctx, circleX, circleY, 15, rect.label, 'white', 'black');
+        });
+      },
+    }, {
+      mocks: {
+        $refs: {
+          myCanvas: mockCanvas,
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('fetches data from API and updates rectangles', async () => {
+    await wrapper.vm.$nextTick(); // Wait for `mounted` lifecycle to complete
+    expect(global.fetch).toHaveBeenCalledWith("https://your-api-url.com/api/rectangles");
+    expect(wrapper.vm.rectangles).toEqual(mockApiResponse);
+  });
+
+  test('draws each rectangle with the correct attributes', async () => {
+    await wrapper.vm.$nextTick();
+
+    mockApiResponse.forEach((rect, index) => {
+      // Check that the rectangle is drawn with the correct color and dimensions
+      expect(mockContext.fillStyle).toBe(rect.color);
+      expect(mockContext.fillRect).toHaveBeenCalledWith(rect.x, rect.y, rect.width, rect.height);
+
+      // Check that the border is drawn
+      expect(mockContext.strokeStyle).toBe('black');
+      expect(mockContext.lineWidth).toBe(2);
+      expect(mockContext.strokeRect).toHaveBeenCalledWith(rect.x, rect.y, rect.width, rect.height);
+
+      // Check that the console log is called for each rectangle
+      expect(console.log).toHaveBeenCalledWith(`Rectangle at index ${index} has border`);
+    });
+  });
+
+  test('calls drawCircleLabel for each rectangle', async () => {
+    const drawCircleLabelSpy = jest.spyOn(wrapper.vm, 'mounted'); // Spy on the helper function
+    await wrapper.vm.$nextTick();
+
+    mockApiResponse.forEach((rect) => {
+      const circleX = rect.x + rect.width / 2; // Circle center X
+      const circleY = rect.y + rect.height / 2; // Circle center Y
+      expect(drawCircleLabelSpy).toHaveBeenCalledWith(
+        mockContext,
+        circleX,
+        circleY,
+        15,
+        rect.label,
+        'white',
+        'black'
+      );
+    });
+  });
+});
