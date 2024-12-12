@@ -1,0 +1,80 @@
+import { shallowMount } from '@vue/test-utils';
+import MyComponent from '@/components/MyComponent.vue'; // Update with the actual component path
+import FetchAPI from '@/utils/FetchAPI'; // Update with the actual FetchAPI path
+
+jest.mock('@/utils/FetchAPI'); // Mock the FetchAPI class
+
+describe('Methods: fetchImage and fetchProcessCoordinates', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(MyComponent, {
+      mocks: {
+        $refs: {
+          myCanvas: {
+            getContext: jest.fn(() => ({
+              drawImage: jest.fn(),
+              fillRect: jest.fn(),
+              strokeRect: jest.fn(),
+              beginPath: jest.fn(),
+              arc: jest.fn(),
+              closePath: jest.fn(),
+              fill: jest.fn(),
+              stroke: jest.fn(),
+              fillText: jest.fn(),
+            })),
+          },
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('fetchImage calls the API and creates an image URL', async () => {
+    const mockBlob = new Blob(['image data'], { type: 'image/png' });
+    const mockCreateObjectURL = jest.fn(() => 'mockObjectURL');
+    URL.createObjectURL = mockCreateObjectURL;
+
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn(() =>
+        Promise.resolve({
+          data: mockBlob,
+        })
+      ),
+    }));
+
+    await wrapper.vm.fetchImage();
+
+    expect(FetchAPI).toHaveBeenCalled();
+    expect(FetchAPI.mock.instances[0].get).toHaveBeenCalledWith('/assets/images/line_chart.png', {
+      responseType: 'blob',
+    });
+    expect(mockCreateObjectURL).toHaveBeenCalledWith(mockBlob);
+    expect(wrapper.vm.imageUrl).toBe('mockObjectURL');
+    expect(wrapper.vm.createCanvas).toHaveBeenCalledWith('mockObjectURL');
+  });
+
+  it('fetchProcessCoordinates fetches and updates rectangles', async () => {
+    const mockCoordinates = [
+      { x: 10, y: 20, width: 50, height: 30, process_id: 1, operation_status: 1 },
+      { x: 60, y: 90, width: 70, height: 40, process_id: 2, operation_status: 2 },
+    ];
+
+    FetchAPI.mockImplementation(() => ({
+      get: jest.fn(() =>
+        Promise.resolve({
+          data: mockCoordinates,
+        })
+      ),
+    }));
+
+    await wrapper.vm.fetchProcessCoordinates();
+
+    expect(FetchAPI).toHaveBeenCalled();
+    expect(FetchAPI.mock.instances[0].get).toHaveBeenCalledWith('/api/get-coordinates');
+    expect(wrapper.vm.rectangles).toEqual(mockCoordinates);
+  });
+});
