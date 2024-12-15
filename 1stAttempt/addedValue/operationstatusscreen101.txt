@@ -1,0 +1,266 @@
+// operationstatusscreen
+
+<template>
+  <v-container fluid>
+    <v-row>
+      <v-col cols="12">
+        <common-table :dynamic-label="dynamicLabel"></common-table>
+      </v-col>
+      <v-col class="ma-2">
+        <canvas ref="myCanvas" width="416" height="700" class="canvas"></canvas>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import { FetchAPI } from '@/utility/apiRequest'
+import CommonTable from '../common/CommonTable.vue'
+
+export default {
+  name: 'OperationStatusScreen',
+  components: {
+    CommonTable,
+  },
+  data() {
+    return {
+      imageUrl: null,
+      rectangles: [],
+    }
+  },
+  computed: {
+    /**
+     * Determines the label dynamically based on the last rectangle's status
+     */
+    dynamicLabel() {
+      if (this.rectangles.length === 0) {
+        return '稼働中'; // Default label
+      }
+      const lastStatus = this.rectangles[this.rectangles.length - 1].operation_status;
+      return lastStatus === 3 ? '異常発生中' : '稼働中'; // Change label based on status
+    },
+  },
+  mounted() {
+    this.fetchImage()
+  },
+  methods: {
+    async fetchImage() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/assets/images/line_chart.png', {
+          responseType: 'blob',
+        })
+        this.imageUrl = URL.createObjectURL(response)
+        this.createCanvas(this.imageUrl)
+      } catch (err) {
+        console.log(err)
+      }
+    },
+    async fetchProcessCoordinates() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-coordinates')
+        this.rectangles = [...response.data]
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    async createCanvas(imageURL) {
+      await this.fetchProcessCoordinates()
+      const canvas = this.$refs.myCanvas
+      const ctx = canvas.getContext('2d')
+      const image = new Image()
+      image.src = imageURL
+      image.onload = () => {
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+        this.rectangles.forEach((rect) => {
+          ctx.fillStyle = this.determineColor(rect.operation_status)
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
+          ctx.strokeStyle = 'white'
+          ctx.lineWidth = 3
+          ctx.strokeRect(rect.x, rect.y, rect.width, rect.height)
+        })
+      }
+    },
+    determineColor(status) {
+      switch (status) {
+        case 1:
+          return 'green'
+        case 2:
+          return '#FFCA37'
+        case 3:
+          return 'red'
+        default:
+          return 'grey'
+      }
+    },
+  },
+}
+</script>
+
+
+// commontable
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-show="TABLE_PROPERTIES.TABLE_HEADER.length != 0"
+          v-for="(column, columnIndex) in TABLE_PROPERTIES.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+        >
+          <common-label
+            :item="{
+              ...column,
+              display: { label: columnIndex === 1 ? dynamicLabel : column.display.label },
+            }"
+          ></common-label>
+        </th>
+      </tr>
+    </thead>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue'
+export default {
+  components: { CommonLabel },
+  name: 'CommonTable',
+  props: {
+    dynamicLabel: {
+      type: String,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      TABLE_PROPERTIES: { /* Table properties as before */ },
+    }
+  },
+}
+</script>
+
+
+///// jest test
+
+import { shallowMount } from '@vue/test-utils'
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+// Mock FetchAPI
+jest.mock('@/utility/apiRequest', () => ({
+  FetchAPI: jest.fn().mockImplementation(() => ({
+    get: jest.fn(),
+  })),
+}))
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper
+  let mockGet
+
+  beforeEach(() => {
+    mockGet = jest.fn()
+    FetchAPI.mockImplementation(() => ({
+      get: mockGet,
+    }))
+    wrapper = shallowMount(OperationStatusScreen, {
+      stubs: ['common-table'],
+    })
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  describe('computed properties', () => {
+    it('returns default label when no rectangles exist', () => {
+      wrapper.setData({ rectangles: [] })
+      expect(wrapper.vm.dynamicLabel).toBe('稼働中')
+    })
+
+    it('returns "異常発生中" when the last rectangle has status 3', () => {
+      wrapper.setData({ rectangles: [{ operation_status: 3 }] })
+      expect(wrapper.vm.dynamicLabel).toBe('異常発生中')
+    })
+
+    it('returns "稼働中" when the last rectangle has status other than 3', () => {
+      wrapper.setData({ rectangles: [{ operation_status: 1 }] })
+      expect(wrapper.vm.dynamicLabel).toBe('稼働中')
+    })
+  })
+
+  describe('methods', () => {
+    describe('fetchImage', () => {
+      it('fetches image and calls createCanvas', async () => {
+        const mockBlob = new Blob(['test'], { type: 'image/png' })
+        const mockURL = 'blob:http://example.com/image'
+
+        mockGet.mockResolvedValueOnce(mockBlob)
+        URL.createObjectURL = jest.fn(() => mockURL)
+
+        const createCanvasSpy = jest.spyOn(wrapper.vm, 'createCanvas')
+
+        await wrapper.vm.fetchImage()
+
+        expect(mockGet).toHaveBeenCalledWith('/assets/images/line_chart.png', { responseType: 'blob' })
+        expect(URL.createObjectURL).toHaveBeenCalledWith(mockBlob)
+        expect(wrapper.vm.imageUrl).toBe(mockURL)
+        expect(createCanvasSpy).toHaveBeenCalledWith(mockURL)
+      })
+
+      it('handles error gracefully', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+        mockGet.mockRejectedValueOnce(new Error('Fetch failed'))
+
+        await wrapper.vm.fetchImage()
+
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error))
+        consoleSpy.mockRestore()
+      })
+    })
+
+    describe('fetchProcessCoordinates', () => {
+      it('fetches rectangle coordinates and updates data', async () => {
+        const mockData = { data: [{ x: 10, y: 20, width: 50, height: 30, operation_status: 1 }] }
+        mockGet.mockResolvedValueOnce(mockData)
+
+        await wrapper.vm.fetchProcessCoordinates()
+
+        expect(mockGet).toHaveBeenCalledWith('/api/get-coordinates')
+        expect(wrapper.vm.rectangles).toEqual(mockData.data)
+      })
+
+      it('handles error gracefully', async () => {
+        const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+        mockGet.mockRejectedValueOnce(new Error('API Error'))
+
+        await wrapper.vm.fetchProcessCoordinates()
+
+        expect(consoleSpy).toHaveBeenCalledWith(expect.any(Error))
+        consoleSpy.mockRestore()
+      })
+    })
+
+    describe('determineColor', () => {
+      it('returns green for status 1', () => {
+        expect(wrapper.vm.determineColor(1)).toBe('green')
+      })
+
+      it('returns #FFCA37 for status 2', () => {
+        expect(wrapper.vm.determineColor(2)).toBe('#FFCA37')
+      })
+
+      it('returns red for status 3', () => {
+        expect(wrapper.vm.determineColor(3)).toBe('red')
+      })
+
+      it('returns grey for any other status', () => {
+        expect(wrapper.vm.determineColor(0)).toBe('grey')
+        expect(wrapper.vm.determineColor(4)).toBe('grey')
+      })
+    })
+  })
+})

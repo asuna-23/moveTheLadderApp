@@ -1,0 +1,137 @@
+// computed: {
+  operationStatusLabel() {
+    if (this.rectangles.length === 0) return '異常発生中'; // Default label
+
+    const lastStatus = this.rectangles[this.rectangles.length - 1].operation_status;
+
+    switch (lastStatus) {
+      case 1: // 稼働中 (In operation)
+        return '稼働中';
+      case 2: // 準備中 (Preparation)
+        return '準備中';
+      case 3: // 異常停止 (Abnormal Stop)
+        return '異常停止中';
+      default:
+        return '異常発生中'; // Default case
+    }
+  },
+},
+
+/// jest test
+
+import { shallowMount } from '@vue/test-utils';
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue';
+
+describe('OperationStatusScreen - operationStatusLabel', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen, {
+      data() {
+        return {
+          rectangles: [],
+        };
+      },
+    });
+  });
+
+  afterEach(() => {
+    wrapper.unmount();
+  });
+
+  it('should return "異常発生中" if rectangles array is empty', () => {
+    expect(wrapper.vm.operationStatusLabel).toBe('異常発生中');
+  });
+
+  it('should return "稼働中" if the last rectangle status is 1', () => {
+    wrapper.setData({
+      rectangles: [{ operation_status: 1 }],
+    });
+    expect(wrapper.vm.operationStatusLabel).toBe('稼働中');
+  });
+
+  it('should return "準備中" if the last rectangle status is 2', () => {
+    wrapper.setData({
+      rectangles: [{ operation_status: 2 }],
+    });
+    expect(wrapper.vm.operationStatusLabel).toBe('準備中');
+  });
+
+  it('should return "異常停止中" if the last rectangle status is 3', () => {
+    wrapper.setData({
+      rectangles: [{ operation_status: 3 }],
+    });
+    expect(wrapper.vm.operationStatusLabel).toBe('異常停止中');
+  });
+
+  it('should return "異常発生中" for an unknown operation_status value', () => {
+    wrapper.setData({
+      rectangles: [{ operation_status: 999 }],
+    });
+    expect(wrapper.vm.operationStatusLabel).toBe('異常発生中');
+  });
+});
+
+
+
+////
+
+<v-col cols="12">
+  <common-table :dynamic-label="operationStatusLabel"></common-table>
+</v-col>
+
+
+///
+
+props: {
+  dynamicLabel: {
+    type: String,
+    default: '異常発生中', // Default value
+  },
+},
+
+///
+
+<thead>
+  <tr>
+    <th
+      v-show="TABLE_PROPERTIES.TABLE_HEADER.length != 0"
+      v-for="(column, columnIndex) in TABLE_PROPERTIES.TABLE_HEADER"
+      :key="columnIndex"
+      v-bind="column.directives"
+    >
+      <common-label :item="column" v-if="columnIndex !== 1"></common-label>
+      <!-- Replace the 2nd column with the dynamic label -->
+      <common-label
+        v-else
+        :item="{ display: { label: dynamicLabel }, directives: {} }"
+      ></common-label>
+    </th>
+  </tr>
+</thead>
+
+
+///
+
+await this.fetchProcessCoordinates();
+
+
+///
+
+<thead>
+  <tr>
+    <th
+      v-show="TABLE_PROPERTIES.TABLE_HEADER.length != 0"
+      v-for="(column, columnIndex) in TABLE_PROPERTIES.TABLE_HEADER"
+      :key="columnIndex"
+      v-bind="column.directives"
+    >
+      <common-label :item="column" v-if="columnIndex !== 1"></common-label>
+      <!-- Dynamic column -->
+      <common-label
+        v-else
+        :item="{ display: { label: dynamicLabel }, directives: {} }"
+      ></common-label>
+    </th>
+  </tr>
+</thead>

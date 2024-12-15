@@ -1,0 +1,137 @@
+import { shallowMount } from '@vue/test-utils';
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue';
+import FetchAPI from '@/api/FetchAPI';
+
+jest.mock('@/api/FetchAPI');
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen, {
+      mocks: {
+        $refs: {
+          myCanvas: document.createElement('canvas'),
+        },
+      },
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('fetchImage updates imageUrl on success', async () => {
+    const mockApi = new FetchAPI();
+    mockApi.get.mockResolvedValue({ success: true, data: 'http://example.com/image.jpg' });
+
+    await wrapper.vm.fetchImage();
+
+    expect(wrapper.vm.imageUrl).toBe('http://example.com/image.jpg');
+  });
+
+  test('fetchImage handles error gracefully', async () => {
+    const mockApi = new FetchAPI();
+    mockApi.get.mockRejectedValue(new Error('API Error'));
+
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await wrapper.vm.fetchImage();
+
+    expect(console.error).toHaveBeenCalledWith('Error fetching image:', expect.any(Error));
+    expect(wrapper.vm.imageUrl).toBe(null);
+
+    console.error.mockRestore();
+  });
+
+  test('determineColor returns correct color for status', () => {
+    expect(wrapper.vm.determineColor(1)).toBe('green');
+    expect(wrapper.vm.determineColor(3)).toBe('red');
+  });
+
+  test('determineColor returns default color for unknown status', () => {
+    expect(wrapper.vm.determineColor(99)).toBe('grey'); // Assuming grey is the default
+  });
+
+  test('createCanvas draws rectangles on the canvas', async () => {
+    wrapper.setData({
+      rectangles: [
+        { x: 10, y: 20, width: 50, height: 50, operation_status: 1, process_id: 1 },
+        { x: 70, y: 80, width: 50, height: 50, operation_status: 3, process_id: 2 },
+      ],
+    });
+
+    const ctx = {
+      fillStyle: '',
+      fillRect: jest.fn(),
+      strokeStyle: '',
+      strokeRect: jest.fn(),
+    };
+    jest.spyOn(wrapper.vm.$refs.myCanvas, 'getContext').mockReturnValue(ctx);
+
+    await wrapper.vm.createCanvas();
+
+    expect(ctx.fillRect).toHaveBeenCalledTimes(2); // Two rectangles
+    expect(ctx.fillRect).toHaveBeenCalledWith(10, 20, 50, 50);
+    expect(ctx.fillRect).toHaveBeenCalledWith(70, 80, 50, 50);
+    expect(ctx.strokeRect).toHaveBeenCalledTimes(2);
+  });
+
+  test('createCanvas handles empty rectangles gracefully', async () => {
+    wrapper.setData({ rectangles: [] });
+
+    const ctx = {
+      fillStyle: '',
+      fillRect: jest.fn(),
+      strokeStyle: '',
+      strokeRect: jest.fn(),
+    };
+    jest.spyOn(wrapper.vm.$refs.myCanvas, 'getContext').mockReturnValue(ctx);
+
+    await wrapper.vm.createCanvas();
+
+    expect(ctx.fillRect).not.toHaveBeenCalled();
+    expect(ctx.strokeRect).not.toHaveBeenCalled();
+  });
+
+  test('fetchProcessCoordinates updates rectangles with API data', async () => {
+    const mockData = [
+      { x: 10, y: 20, width: 50, height: 50, operation_status: 1, process_id: 1 },
+      { x: 70, y: 80, width: 50, height: 50, operation_status: 3, process_id: 2 },
+    ];
+    const mockApi = new FetchAPI();
+    mockApi.get.mockResolvedValue({ success: true, data: mockData });
+
+    await wrapper.vm.fetchProcessCoordinates();
+
+    expect(wrapper.vm.rectangles).toEqual(mockData);
+  });
+
+  test('fetchProcessCoordinates handles API errors gracefully', async () => {
+    const mockApi = new FetchAPI();
+    mockApi.get.mockRejectedValue(new Error('API Error'));
+
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await wrapper.vm.fetchProcessCoordinates();
+
+    expect(console.error).toHaveBeenCalledWith('Error fetching process coordinates:', expect.any(Error));
+    expect(wrapper.vm.rectangles).toEqual([]); // Ensure rectangles are not updated
+
+    console.error.mockRestore();
+  });
+
+  test('canvas dimensions are set correctly', () => {
+    const canvas = wrapper.vm.$refs.myCanvas;
+
+    expect(canvas.width).toBe(416);
+    expect(canvas.height).toBe(700);
+  });
+
+  test('API mocks reset correctly between tests', () => {
+    const mockApi = new FetchAPI();
+    mockApi.get.mockResolvedValue({ success: true, data: [] });
+
+    expect(mockApi.get).not.toHaveBeenCalled();
+  });
+});
