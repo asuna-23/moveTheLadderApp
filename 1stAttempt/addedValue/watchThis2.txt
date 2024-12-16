@@ -1,0 +1,428 @@
+// realtime
+
+<template>
+  <v-app class="bg-surface-variant overflow-hidden">
+    <NavBarComponent />
+    <v-container fluid class="operationStatusContainer">
+      <v-row>
+        <v-col class="lineOperationStatus">
+          <OperationStatusScreen
+            :coordinates="coordinates"
+            :operation="operation"
+          />
+        </v-col>
+        <v-col class="imageOperationStatus"></v-col>
+      </v-row>
+    </v-container>
+  </v-app>
+</template>
+
+<script>
+import NavBarComponent from './pages/NavBarComponent.vue';
+import OperationStatusScreen from '@/components/pages/OperationStatusScreen.vue';
+import { FetchAPI } from '@/utility/apiRequest';
+
+export default {
+  name: 'RealTimeAndon',
+  components: {
+    NavBarComponent,
+    OperationStatusScreen,
+  },
+  data() {
+    return {
+      coordinates: [],
+      operation: null,
+    };
+  },
+  mounted() {
+    this.fetchCoordinates();
+  },
+  methods: {
+    async fetchCoordinates() {
+      try {
+        const api = new FetchAPI();
+        const response = await api.get('/api/get-coordinates');
+        this.coordinates = response.data || [];
+        this.operation =
+          this.coordinates.length > 0
+            ? this.coordinates[this.coordinates.length - 1].operation_status
+            : null;
+      } catch (error) {
+        console.error('Failed to fetch coordinates:', error.message);
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.operationStatusContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lineOperationStatus {
+  min-width: 30.8rem;
+  max-width: 30.8rem;
+}
+.imageOperationStatus {
+  min-width: 20rem;
+}
+</style>
+
+
+// operationStatus
+
+<template>
+  <v-container fluid>
+    <v-row>
+      <v-col cols="12">
+        <CommonTable
+          :last-process="operationLabel"
+          :style="determineBackgroundColor()"
+        />
+      </v-col>
+      <v-col class="ma-2">
+        <canvas ref="myCanvas" width="416" height="700" class="canvas"></canvas>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import { FetchAPI } from '@/utility/apiRequest';
+import CommonTable from '../common/CommonTable.vue';
+
+export default {
+  name: 'OperationStatusScreen',
+  components: {
+    CommonTable,
+  },
+  props: {
+    coordinates: { type: Array, required: true },
+    operation: { type: Number, default: 0 },
+  },
+  data() {
+    return {
+      imageUrl: null,
+      operationLabel: '',
+    };
+  },
+  watch: {
+    coordinates: {
+      immediate: true,
+      handler(newCoordinates) {
+        if (this.imageUrl) {
+          this.createCanvas(newCoordinates);
+          this.setOperationLabel(newCoordinates);
+        }
+      },
+    },
+  },
+  mounted() {
+    this.fetchImage();
+  },
+  methods: {
+    setOperationLabel(newCoordinates) {
+      if (!newCoordinates || newCoordinates.length === 0) {
+        this.operationLabel = '異常停止'; // Default label
+        return;
+      }
+      const lastStatus =
+        newCoordinates[newCoordinates.length - 1].operation_status;
+
+      const statusMap = {
+        1: '稼働中',
+        2: '準備中',
+        3: '異常停止',
+      };
+      this.operationLabel = statusMap[lastStatus] || '誤差';
+    },
+    async fetchImage() {
+      try {
+        const api = new FetchAPI();
+        const response = await api.get('/assets/images/line_chart.png', {
+          responseType: 'blob',
+        });
+        this.imageUrl = URL.createObjectURL(response);
+        this.createCanvas(this.coordinates);
+      } catch (error) {
+        console.error('Failed to fetch image:', error.message);
+      }
+    },
+    createCanvas(rectangles) {
+      const canvas = this.$refs.myCanvas;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const image = new Image();
+      image.src = this.imageUrl;
+
+      image.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+        rectangles.forEach((rect) => {
+          const { statusColor, strokeColor } = this.determineColor(
+            rect.operation_status
+          );
+          ctx.fillStyle = statusColor;
+          ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = 3;
+          ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+          this.drawCircleLabel(
+            ctx,
+            rect.x + rect.width / 2,
+            rect.y + rect.height / 2,
+            15,
+            rect.process_id,
+            'transparent',
+            strokeColor
+          );
+        });
+      };
+    },
+    drawCircleLabel(ctx, x, y, radius, label, fillStyle, strokeStyle) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+      ctx.strokeStyle = strokeStyle;
+      ctx.stroke();
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = strokeStyle;
+      ctx.fillText(label, x, y);
+    },
+    determineColor(status) {
+      const colorMap = {
+        1: { statusColor: 'green', strokeColor: 'white' },
+        2: { statusColor: '#FFCA37', strokeColor: '#424242' },
+        3: { statusColor: 'red', strokeColor: 'white' },
+        default: { statusColor: 'grey', strokeColor: 'white' },
+      };
+      return colorMap[status] || colorMap.default;
+    },
+    determineBackgroundColor() {
+      const colorMap = {
+        1: { backgroundColor: 'green', color: 'white' },
+        2: { backgroundColor: '#FFCA37', color: 'black' },
+        3: { backgroundColor: 'red', color: 'white' },
+        default: { backgroundColor: 'gray', color: 'white' },
+      };
+      return colorMap[this.operation] || colorMap.default;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.canvas {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+</style>
+
+///////////////////
+
+import { shallowMount } from '@vue/test-utils';
+import RealTimeAndon from '@/components/RealTimeAndon.vue';
+import { FetchAPI } from '@/utility/apiRequest';
+
+jest.mock('@/utility/apiRequest');
+
+describe('RealTimeAndon.vue', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(RealTimeAndon);
+  });
+
+  afterEach(() => {
+    wrapper.destroy();
+    jest.clearAllMocks();
+  });
+
+  it('should fetch coordinates and update data properties correctly with sample data', async () => {
+    // Mock API response with provided sample coordinates
+    const mockCoordinates = [
+      { width: 70, height: 40, x: 65, y: 515, process_id: 1, operation_status: 1 },
+      { width: 70, height: 40, x: 65, y: 425, process_id: 2, operation_status: 1 },
+      { width: 70, height: 40, x: 65, y: 350, process_id: 3, operation_status: 3 },
+    ];
+    FetchAPI.prototype.get.mockResolvedValue({ data: mockCoordinates });
+
+    // Call the method
+    await wrapper.vm.fetchCoordinates();
+
+    // Assertions
+    expect(FetchAPI.prototype.get).toHaveBeenCalledWith('/api/get-coordinates');
+    expect(wrapper.vm.coordinates).toEqual(mockCoordinates); // Verify coordinates are updated
+    expect(wrapper.vm.operation).toBe(3); // Verify the operation_status of the last item
+  });
+
+  it('should handle empty coordinates array from API gracefully', async () => {
+    // Mock API response with an empty array
+    FetchAPI.prototype.get.mockResolvedValue({ data: [] });
+
+    // Call the method
+    await wrapper.vm.fetchCoordinates();
+
+    // Assertions
+    expect(wrapper.vm.coordinates).toEqual([]); // Coordinates should remain an empty array
+    expect(wrapper.vm.operation).toBeNull(); // Operation should remain null
+  });
+
+  it('should handle API errors', async () => {
+    // Mock API error
+    const mockError = new Error('Network error');
+    FetchAPI.prototype.get.mockRejectedValue(mockError);
+
+    // Spy on console.error
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Call the method
+    await wrapper.vm.fetchCoordinates();
+
+    // Assertions
+    expect(FetchAPI.prototype.get).toHaveBeenCalledWith('/api/get-coordinates');
+    expect(wrapper.vm.coordinates).toEqual([]); // Should remain an empty array
+    expect(wrapper.vm.operation).toBeNull(); // Should remain null
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to fetch coordinates:', 'Network error');
+
+    // Restore console.error
+    consoleErrorSpy.mockRestore();
+  });
+});
+
+
+
+//////
+
+import { shallowMount } from '@vue/test-utils';
+import OperationStatusScreen from '@/components/OperationStatusScreen.vue';
+import { useFetchAPI } from '@/utility/apiRequest';
+
+jest.mock('@/utility/apiRequest');
+
+describe('OperationStatusScreen.vue', () => {
+  let wrapper;
+
+  const mockCoordinates = [
+    { width: 70, height: 40, x: 65, y: 515, process_id: 1, operation_status: 1 },
+    { width: 70, height: 40, x: 65, y: 425, process_id: 2, operation_status: 2 },
+    { width: 70, height: 40, x: 65, y: 350, process_id: 3, operation_status: 3 },
+  ];
+
+  beforeEach(() => {
+    wrapper = shallowMount(OperationStatusScreen, {
+      propsData: {
+        coordinates: mockCoordinates,
+      },
+      stubs: {
+        CommonTable: true, // Stub the CommonTable component
+      },
+    });
+  });
+
+  afterEach(() => {
+    wrapper.destroy();
+    jest.clearAllMocks();
+  });
+
+  it('should set the default operation label to "異常停止"', () => {
+    expect(wrapper.vm.operationLabel).toBe('異常停止');
+  });
+
+  it('should update the operation label when coordinates change', async () => {
+    // Trigger the watch for coordinates
+    await wrapper.setProps({
+      coordinates: [
+        { width: 70, height: 40, x: 65, y: 350, process_id: 3, operation_status: 2 },
+      ],
+    });
+    expect(wrapper.vm.operationLabel).toBe('準備中');
+  });
+
+  it('should fallback to "異常停止" when coordinates are empty', async () => {
+    await wrapper.setProps({ coordinates: [] });
+    expect(wrapper.vm.operationLabel).toBe('異常停止');
+  });
+
+  it('should correctly fetch and set the image URL', async () => {
+    const mockBlob = new Blob();
+    useFetchAPI.mockResolvedValue(mockBlob);
+
+    await wrapper.vm.fetchImage();
+
+    expect(useFetchAPI).toHaveBeenCalledWith('/assets/images/line_chart.png', {
+      responseType: 'blob',
+    });
+    expect(wrapper.vm.imageUrl).toBe(URL.createObjectURL(mockBlob));
+  });
+
+  it('should log an error when fetchImage fails', async () => {
+    const mockError = new Error('Network error');
+    useFetchAPI.mockRejectedValue(mockError);
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    await wrapper.vm.fetchImage();
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error fetching image:', mockError);
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('should call createCanvas when coordinates change', async () => {
+    const createCanvasSpy = jest.spyOn(wrapper.vm, 'createCanvas');
+
+    await wrapper.setProps({ coordinates: mockCoordinates });
+
+    expect(createCanvasSpy).toHaveBeenCalledWith(wrapper.vm.imageUrl, mockCoordinates);
+
+    createCanvasSpy.mockRestore();
+  });
+
+  it('should call getStatusColor with the correct operation status', () => {
+    const statusColor = wrapper.vm.getStatusColor(1);
+    expect(statusColor).toEqual({ statusColor: 'green', strokeColor: 'white' });
+
+    const unknownStatusColor = wrapper.vm.getStatusColor(99);
+    expect(unknownStatusColor).toEqual({ statusColor: 'grey', strokeColor: 'white' });
+  });
+
+  it('should draw a circle label correctly', () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    wrapper.vm.drawCircleLabel(ctx, 100, 100, '1', 'red');
+
+    // Validate that the methods to draw a circle and label were called
+    expect(ctx.fillStyle).toBe('white');
+    expect(ctx.strokeStyle).toBe('red');
+    expect(ctx.textAlign).toBe('center');
+    expect(ctx.textBaseline).toBe('middle');
+  });
+
+  it('should clear and redraw the canvas with rectangles', async () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 500;
+    canvas.height = 500;
+    wrapper.vm.$refs.myCanvas = canvas;
+
+    const ctx = canvas.getContext('2d');
+    const drawImageSpy = jest.spyOn(ctx, 'drawImage');
+    const fillRectSpy = jest.spyOn(ctx, 'fillRect');
+    const strokeRectSpy = jest.spyOn(ctx, 'strokeRect');
+
+    wrapper.vm.createCanvas(wrapper.vm.imageUrl, mockCoordinates);
+
+    expect(drawImageSpy).toHaveBeenCalled();
+    expect(fillRectSpy).toHaveBeenCalledTimes(mockCoordinates.length);
+    expect(strokeRectSpy).toHaveBeenCalledTimes(mockCoordinates.length);
+  });
+});
+
