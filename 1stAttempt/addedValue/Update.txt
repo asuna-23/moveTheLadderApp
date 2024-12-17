@@ -57,3 +57,263 @@ async updatePlannedUnits() {
     console.error("Failed to update planned number units:", error)
   }
 }
+
+
+###
+import pytest
+from flask import Flask, json
+from src.setup_db_example.models.m_operation_information import (
+    OperationInformationDb,
+    db,
+)
+from src.setup_db_example.routes.a_operation_information import (
+    operation_information_router,
+)
+
+# Flask app fixture for testing
+@pytest.fixture
+def app():
+    app = Flask(__name__)
+    app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"  # In-memory database
+    app.register_blueprint(operation_information_router)
+    db.init_app(app)
+
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.drop_all()
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+@pytest.fixture
+def sample_data(app):
+    """Insert sample data into the database for testing."""
+    with app.app_context():
+        operation = OperationInformationDb(
+            process_id=1,
+            planned_number_units=10,
+            operation_status="In Progress",
+        )
+        db.session.add(operation)
+        db.session.commit()
+        return operation
+
+
+# Test Cases
+def test_update_units_success(client, sample_data):
+    """Test successful update of planned_number_units."""
+    response = client.put(
+        f"/api/update-units/{sample_data.process_id}",
+        data=json.dumps({"planned_number_units": 15}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    response_data = response.get_json()
+    assert response_data["success"] is True
+    assert response_data["message"] == "PLANNED_NUMBER_UNITS UPDATED SUCCESSFULLY"
+    assert response_data["updated_value"] == 15
+
+    # Verify the database update
+    updated_operation = OperationInformationDb.query.get(sample_data.process_id)
+    assert updated_operation.planned_number_units == 15
+
+
+def test_update_units_missing_value(client, sample_data):
+    """Test update with missing planned_number_units in the request body."""
+    response = client.put(
+        f"/api/update-units/{sample_data.process_id}",
+        data=json.dumps({}),  # No 'planned_number_units'
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    response_data = response.get_json()
+    assert response_data["success"] is False
+    assert response_data["message"] == "Missing planned_number_units"
+
+
+def test_update_units_invalid_process_id(client):
+    """Test update with a process_id that doesn't exist."""
+    response = client.put(
+        "/api/update-units/999",  # Non-existent process_id
+        data=json.dumps({"planned_number_units": 20}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 404
+    response_data = response.get_json()
+    assert response_data["success"] is False
+    assert response_data["message"] == "Operation not found"
+
+
+def test_update_units_invalid_request_format(client, sample_data):
+    """Test update with invalid request format."""
+    response = client.put(
+        f"/api/update-units/{sample_data.process_id}",
+        data="Invalid JSON",  # Non-JSON payload
+        content_type="application/json",
+    )
+
+    assert response.status_code == 500
+    response_data = response.get_json()
+    assert response_data["success"] is False
+    assert "Error updating units" in response_data["message"]
+
+
+def test_update_units_no_process_id(client):
+    """Test update without process_id in the URL."""
+    response = client.put(
+        "/api/update-units/",  # Missing process_id
+        data=json.dumps({"planned_number_units": 20}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 404  # Flask will return a 404 for incorrect routes
+
+
+////////
+
+jest.useFakeTimers(); // Mock setInterval and clearInterval
+
+describe("startIncrementer", () => {
+  let instance;
+
+  beforeEach(() => {
+    // Create an instance of the component or class
+    instance = {
+      incremented_units: 0,
+      incrementInterval: null,
+      reference_CT: 1000, // Interval in ms
+      clearIncrementer: jest.fn(), // Mock clearIncrementer
+      updatePlannedUnits: jest.fn().mockResolvedValue(), // Mock API call
+      startIncrementer: function () {
+        this.clearIncrementer();
+        this.incrementInterval = setInterval(async () => {
+          this.incremented_units += 1;
+          await this.updatePlannedUnits();
+        }, this.reference_CT);
+      },
+    };
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+  });
+
+  test("increments units and calls updatePlannedUnits", async () => {
+    instance.startIncrementer();
+
+    // Fast-forward the timer to simulate intervals
+    jest.advanceTimersByTime(3000); // Simulate 3 intervals (3 seconds)
+
+    expect(instance.clearIncrementer).toHaveBeenCalledTimes(1); // Check clearIncrementer is called
+    expect(instance.incremented_units).toBe(3); // Check incremented_units increments correctly
+    expect(instance.updatePlannedUnits).toHaveBeenCalledTimes(3); // Check API is called 3 times
+  });
+
+  test("sets the interval for reference_CT", () => {
+    instance.startIncrementer();
+
+    // Verify setInterval was called with the correct delay
+    expect(setInterval).toHaveBeenCalledWith(expect.any(Function), instance.reference_CT);
+  });
+});
+
+
+//
+
+import { FetchAPI } from '@/utility/apiRequest'
+
+jest.mock('@/utility/apiRequest') // Mock FetchAPI module
+
+describe('updatePlannedUnits', () => {
+  let instance
+
+  beforeEach(() => {
+    // Mock instance with required properties
+    instance = {
+      incremented_units: 5,
+      operation_information: [
+        { process_id: 101 }, // Last operation with process_id
+      ],
+      updatePlannedUnits: async function () {
+        try {
+          const api = new FetchAPI()
+          const lastOperation =
+            this.operation_information[this.operation_information.length - 1]
+
+          if (lastOperation) {
+            const processId = lastOperation.process_id
+            const payload = { planned_number_units: this.incremented_units }
+
+            await api.put(`/api/update-units/${processId}`, payload)
+            console.log('Units updated successfully')
+          }
+        } catch (error) {
+          console.error('Failed to update planned number units:', error)
+        }
+      },
+    }
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  test('should call the API with correct process_id and payload', async () => {
+    const mockPut = jest.fn().mockResolvedValue({ data: 'Success' }) // Mock successful API call
+    FetchAPI.mockImplementation(() => ({
+      put: mockPut,
+    }))
+
+    await instance.updatePlannedUnits()
+
+    const expectedProcessId = 101
+    const expectedPayload = { planned_number_units: 5 }
+
+    expect(mockPut).toHaveBeenCalledWith(
+      `/api/update-units/${expectedProcessId}`,
+      expectedPayload
+    )
+    expect(mockPut).toHaveBeenCalledTimes(1)
+  })
+
+  test('should handle the case when operation_information is empty', async () => {
+    instance.operation_information = [] // Simulate no operations
+    const mockPut = jest.fn()
+    FetchAPI.mockImplementation(() => ({
+      put: mockPut,
+    }))
+
+    await instance.updatePlannedUnits()
+
+    expect(mockPut).not.toHaveBeenCalled() // Ensure API is not called
+  })
+
+  test('should log an error when the API call fails', async () => {
+    const mockPut = jest.fn().mockRejectedValue(new Error('API Error')) // Mock API failure
+    FetchAPI.mockImplementation(() => ({
+      put: mockPut,
+    }))
+
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    await instance.updatePlannedUnits()
+
+    expect(mockPut).toHaveBeenCalledTimes(1)
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Failed to update planned number units:',
+      expect.any(Error)
+    )
+
+    consoleErrorSpy.mockRestore()
+  })
+})
+
