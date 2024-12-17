@@ -1,0 +1,798 @@
+<common-table
+  :item-table="updatedTableProperties"
+  :incremented-units="incremented_units"
+></common-table>
+
+
+props: {
+  lastProcess: {
+    type: String,
+    default: '異常停止',
+  },
+  incrementedUnits: {
+    type: Number,
+    default: 0, // Default value to start from 0
+  },
+},
+
+
+<tbody>
+  <tr>
+    <td
+      v-show="TABLE_PROPERTIES.TABLE_ROW.length != 0"
+      v-for="(column, columnIndex) in TABLE_PROPERTIES.TABLE_ROW"
+      :key="columnIndex"
+      v-bind="column.directives"
+    >
+      <common-label
+        :item="{
+          ...column,
+          display: { label: columnIndex === 1 ? incrementedUnits : column.display.label },
+        }"
+      ></common-label>
+    </td>
+  </tr>
+</tbody>
+
+
+
+
+
+/// 1st
+
+<template>
+  <v-container fluid>
+    <v-row>
+      <v-col><ProductionLine /></v-col>
+    </v-row>
+    <!-- Display incremented planned number units -->
+    <v-row>
+      <v-col>
+        <v-card outlined>
+          <v-card-title>Planned Number of Units</v-card-title>
+          <v-card-text>
+            {{ incremented_units }}
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import ProductionLine from '@/components/pages/ProcessInformationScreen/ProductionLine.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+export default {
+  name: 'ProcessInformationScreen',
+  components: {
+    ProductionLine,
+  },
+  data() {
+    return {
+      reference_CT: 2000, // Default interval in milliseconds
+      operation_information: [],
+      incremented_units: 0, // To store the incremented units
+      incrementInterval: null, // To hold the interval ID
+    }
+  },
+  methods: {
+    /**
+     * Fetch all operation information
+     */
+    async fetchAllOperations() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-all-operations')
+
+        this.operation_information = [...response.data]
+        this.initializeIncrementer()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    /**
+     * Fetch reference cycle time
+     */
+    async fetchReferenceCT() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-ref-cycle-time')
+
+        this.reference_CT = response.data[0] || 2000 // Fallback to 2 seconds
+        this.restartIncrementer()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    /**
+     * Initialize increment logic
+     */
+    initializeIncrementer() {
+      if (this.operation_information.length > 0) {
+        const lastItem = this.operation_information[this.operation_information.length - 1]
+        this.incremented_units = lastItem.planned_number_units || 0
+
+        this.startIncrementer()
+      }
+    },
+    /**
+     * Start the incrementer with setInterval
+     */
+    startIncrementer() {
+      this.clearIncrementer()
+      this.incrementInterval = setInterval(() => {
+        this.incremented_units += 1
+      }, this.reference_CT)
+    },
+    /**
+     * Restart the incrementer when reference_CT changes
+     */
+    restartIncrementer() {
+      this.startIncrementer()
+    },
+    /**
+     * Clear the existing interval
+     */
+    clearIncrementer() {
+      if (this.incrementInterval) {
+        clearInterval(this.incrementInterval)
+      }
+    },
+  },
+  async mounted() {
+    await this.fetchAllOperations()
+    await this.fetchReferenceCT()
+  },
+  beforeDestroy() {
+    this.clearIncrementer()
+  },
+}
+</script>
+
+<style scoped></style>
+
+
+
+////////////// 2nd
+
+// ProcessInformationScreen
+
+<template>
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <!-- Pass the incremented_units as a prop to ProductionLine -->
+        <ProductionLine :incremented-units="incremented_units" />
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import ProductionLine from '@/components/pages/ProcessInformationScreen/ProductionLine.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+export default {
+  name: 'ProcessInformationScreen',
+  components: {
+    ProductionLine,
+  },
+  data() {
+    return {
+      reference_CT: 2000, // Default interval in milliseconds
+      operation_information: [],
+      incremented_units: 0, // To store the incremented units
+      incrementInterval: null, // Interval ID
+    }
+  },
+  methods: {
+    async fetchAllOperations() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-all-operations')
+
+        this.operation_information = [...response.data]
+        this.initializeIncrementer()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    async fetchReferenceCT() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-ref-cycle-time')
+
+        this.reference_CT = response.data[0] || 2000
+        this.restartIncrementer()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    initializeIncrementer() {
+      if (this.operation_information.length > 0) {
+        const lastItem = this.operation_information[this.operation_information.length - 1]
+        this.incremented_units = lastItem.planned_number_units || 0
+
+        this.startIncrementer()
+      }
+    },
+    startIncrementer() {
+      this.clearIncrementer()
+      this.incrementInterval = setInterval(() => {
+        this.incremented_units += 1
+      }, this.reference_CT)
+    },
+    restartIncrementer() {
+      this.startIncrementer()
+    },
+    clearIncrementer() {
+      if (this.incrementInterval) {
+        clearInterval(this.incrementInterval)
+      }
+    },
+  },
+  async mounted() {
+    await this.fetchAllOperations()
+    await this.fetchReferenceCT()
+  },
+  beforeDestroy() {
+    this.clearIncrementer()
+  },
+}
+</script>
+
+// ProcessLine
+
+<template>
+  <v-container fluid>
+    <v-row class="ProductLineHeader">
+      <common-label :item="productionLineTitle" />
+    </v-row>
+    <v-row>
+      <!-- Pass updated table properties to CommonTable -->
+      <common-table :item-table="updatedTableProperties" />
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import { PRODUCTION_LINE_LABEL } from '@/common/recipe/rLabels'
+import { PROUDUCT_LINE_TABLE } from '@/common/recipe/rTables'
+import CommonLabel from '@/components/common/CommonLabel.vue'
+import CommonTable from '@/components/common/CommonTable.vue'
+
+export default {
+  name: 'ProcessLine',
+  components: {
+    CommonLabel,
+    CommonTable,
+  },
+  props: {
+    incrementedUnits: {
+      type: Number,
+      required: true,
+    },
+  },
+  data() {
+    return {
+      TABLE_PROPERTIES: { ...PROUDUCT_LINE_TABLE },
+      productionLineTitle: PRODUCTION_LINE_LABEL,
+    }
+  },
+  computed: {
+    /**
+     * Dynamically update the table properties to include incremented units
+     */
+    updatedTableProperties() {
+      const updatedTable = { ...this.TABLE_PROPERTIES }
+
+      // Assuming "planned_number_units" is a key in the table data
+      updatedTable.rows = updatedTable.rows.map((row) => {
+        if (row.key === 'planned_number_units') {
+          return { ...row, value: this.incrementedUnits }
+        }
+        return row
+      })
+
+      return updatedTable
+    },
+  },
+}
+</script>
+
+<style scoped>
+.ProductLineHeader {
+  margin-bottom: 1rem;
+}
+</style>
+
+
+
+/////////////////////// jest test //////////////////////////
+
+// 1st
+
+import { shallowMount } from '@vue/test-utils'
+import ProcessInformationScreen from '@/components/pages/ProcessInformationScreen/ProcessInformationScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+// Mock FetchAPI
+jest.mock('@/utility/apiRequest', () => {
+  return {
+    FetchAPI: jest.fn().mockImplementation(() => ({
+      get: jest.fn(),
+    })),
+  }
+})
+
+describe('ProcessInformationScreen.vue', () => {
+  let wrapper
+  let mockApi
+
+  beforeEach(() => {
+    mockApi = new FetchAPI()
+    wrapper = shallowMount(ProcessInformationScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should initialize with default data', () => {
+    expect(wrapper.vm.reference_CT).toBe(2000)
+    expect(wrapper.vm.operation_information).toEqual([])
+    expect(wrapper.vm.incremented_units).toBe(0)
+    expect(wrapper.vm.incrementInterval).toBeNull()
+  })
+
+  it('should fetch all operations and initialize incrementer', async () => {
+    mockApi.get.mockResolvedValueOnce({
+      data: [{ planned_number_units: 5 }, { planned_number_units: 10 }],
+    })
+
+    await wrapper.vm.fetchAllOperations()
+
+    expect(mockApi.get).toHaveBeenCalledWith('/api/get-all-operations')
+    expect(wrapper.vm.operation_information).toEqual([
+      { planned_number_units: 5 },
+      { planned_number_units: 10 },
+    ])
+    expect(wrapper.vm.incremented_units).toBe(10)
+  })
+
+  it('should fetch reference cycle time and restart incrementer', async () => {
+    jest.spyOn(wrapper.vm, 'restartIncrementer') // Spy on restartIncrementer
+    mockApi.get.mockResolvedValueOnce({
+      data: [3000],
+    })
+
+    await wrapper.vm.fetchReferenceCT()
+
+    expect(mockApi.get).toHaveBeenCalledWith('/api/get-ref-cycle-time')
+    expect(wrapper.vm.reference_CT).toBe(3000)
+    expect(wrapper.vm.restartIncrementer).toHaveBeenCalled()
+  })
+
+  it('should initialize incrementer correctly', () => {
+    wrapper.setData({
+      operation_information: [{ planned_number_units: 8 }],
+    })
+
+    wrapper.vm.initializeIncrementer()
+
+    expect(wrapper.vm.incremented_units).toBe(8)
+  })
+
+  it('should start and increment units with setInterval', () => {
+    jest.useFakeTimers()
+    wrapper.setData({ reference_CT: 1000, incremented_units: 0 })
+
+    wrapper.vm.startIncrementer()
+
+    expect(wrapper.vm.incrementInterval).not.toBeNull()
+
+    jest.advanceTimersByTime(3000) // Simulate 3 seconds
+
+    expect(wrapper.vm.incremented_units).toBe(3)
+
+    jest.useRealTimers()
+  })
+
+  it('should clear the incrementer when clearIncrementer is called', () => {
+    jest.spyOn(global, 'clearInterval')
+    wrapper.vm.incrementInterval = 123
+
+    wrapper.vm.clearIncrementer()
+
+    expect(clearInterval).toHaveBeenCalledWith(123)
+    expect(wrapper.vm.incrementInterval).toBeNull()
+  })
+
+  it('should clear incrementer before destroying the component', () => {
+    jest.spyOn(wrapper.vm, 'clearIncrementer')
+    wrapper.destroy()
+
+    expect(wrapper.vm.clearIncrementer).toHaveBeenCalled()
+  })
+})
+
+
+// 2nd
+
+
+import { shallowMount } from '@vue/test-utils'
+import ProcessInformationScreen from '@/components/pages/ProcessInformationScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+jest.mock('@/utility/apiRequest') // Mock API requests
+
+describe('ProcessInformationScreen.vue', () => {
+  let wrapper
+  let mockApiGet
+
+  beforeEach(() => {
+    jest.useFakeTimers() // Mock setInterval
+    mockApiGet = jest.fn()
+    FetchAPI.mockImplementation(() => ({
+      get: mockApiGet,
+    }))
+    wrapper = shallowMount(ProcessInformationScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+    jest.clearTimers()
+  })
+
+  it('calls fetchAllOperations and fetchReferenceCT on mounted', async () => {
+    mockApiGet.mockResolvedValue({ data: [{ planned_number_units: 10 }] })
+
+    await wrapper.vm.$nextTick() // Wait for async lifecycle hooks
+    expect(mockApiGet).toHaveBeenCalledTimes(2)
+    expect(mockApiGet).toHaveBeenCalledWith('/api/get-all-operations')
+    expect(mockApiGet).toHaveBeenCalledWith('/api/get-ref-cycle-time')
+  })
+
+  it('fetchAllOperations sets operation_information and initializes incrementer', async () => {
+    const mockData = [{ planned_number_units: 5 }]
+    mockApiGet.mockResolvedValue({ data: mockData })
+
+    await wrapper.vm.fetchAllOperations()
+    expect(wrapper.vm.operation_information).toEqual(mockData)
+    expect(wrapper.vm.incremented_units).toBe(5)
+  })
+
+  it('fetchReferenceCT sets reference_CT and restarts incrementer', async () => {
+    mockApiGet.mockResolvedValue({ data: [3000] })
+
+    const restartIncrementerSpy = jest.spyOn(wrapper.vm, 'restartIncrementer')
+    await wrapper.vm.fetchReferenceCT()
+
+    expect(wrapper.vm.reference_CT).toBe(3000)
+    expect(restartIncrementerSpy).toHaveBeenCalled()
+  })
+
+  it('initializeIncrementer sets incremented_units and starts incrementer', () => {
+    wrapper.vm.operation_information = [{ planned_number_units: 15 }]
+    const startIncrementerSpy = jest.spyOn(wrapper.vm, 'startIncrementer')
+
+    wrapper.vm.initializeIncrementer()
+
+    expect(wrapper.vm.incremented_units).toBe(15)
+    expect(startIncrementerSpy).toHaveBeenCalled()
+  })
+
+  it('startIncrementer sets interval and increments units', () => {
+    wrapper.vm.reference_CT = 1000
+    wrapper.vm.startIncrementer()
+
+    jest.advanceTimersByTime(3000) // Simulate 3 seconds
+    expect(wrapper.vm.incremented_units).toBe(3)
+  })
+
+  it('clearIncrementer clears existing interval', () => {
+    const clearIntervalSpy = jest.spyOn(global, 'clearInterval')
+    wrapper.vm.incrementInterval = setInterval(() => {}, 1000)
+
+    wrapper.vm.clearIncrementer()
+    expect(clearIntervalSpy).toHaveBeenCalledWith(wrapper.vm.incrementInterval)
+    expect(wrapper.vm.incrementInterval).toBeNull()
+  })
+
+  it('restarts incrementer when restartIncrementer is called', () => {
+    const startIncrementerSpy = jest.spyOn(wrapper.vm, 'startIncrementer')
+
+    wrapper.vm.restartIncrementer()
+    expect(startIncrementerSpy).toHaveBeenCalled()
+  })
+
+  it('clears interval on beforeDestroy', () => {
+    const clearIncrementerSpy = jest.spyOn(wrapper.vm, 'clearIncrementer')
+
+    wrapper.destroy()
+    expect(clearIncrementerSpy).toHaveBeenCalled()
+  })
+})
+
+
+----
+
+import { shallowMount } from '@vue/test-utils'
+import ProcessLine from '@/components/pages/ProcessLine.vue'
+import CommonLabel from '@/components/common/CommonLabel.vue'
+import CommonTable from '@/components/common/CommonTable.vue'
+import { PRODUCTION_LINE_LABEL } from '@/common/recipe/rLabels'
+import { PROUDUCT_LINE_TABLE } from '@/common/recipe/rTables'
+
+describe('ProcessLine.vue', () => {
+  let wrapper
+  const incrementedUnits = 10
+
+  const mockTableData = {
+    ...PROUDUCT_LINE_TABLE,
+    rows: [
+      { key: 'planned_number_units', value: 5 },
+      { key: 'other_data', value: 20 },
+    ],
+  }
+
+  beforeEach(() => {
+    wrapper = shallowMount(ProcessLine, {
+      propsData: { incrementedUnits },
+      data() {
+        return {
+          TABLE_PROPERTIES: { ...mockTableData },
+          productionLineTitle: PRODUCTION_LINE_LABEL,
+        }
+      },
+      stubs: {
+        CommonLabel,
+        CommonTable,
+      },
+    })
+  })
+
+  afterEach(() => {
+    wrapper.destroy()
+  })
+
+  it('renders CommonLabel with the correct production line title', () => {
+    const commonLabel = wrapper.findComponent(CommonLabel)
+    expect(commonLabel.exists()).toBe(true)
+    expect(commonLabel.props('item')).toBe(PRODUCTION_LINE_LABEL)
+  })
+
+  it('renders CommonTable with updated table properties', () => {
+    const commonTable = wrapper.findComponent(CommonTable)
+    expect(commonTable.exists()).toBe(true)
+
+    // Verify the props passed to the table
+    const updatedTable = commonTable.props('itemTable')
+    expect(updatedTable.rows).toEqual([
+      { key: 'planned_number_units', value: incrementedUnits },
+      { key: 'other_data', value: 20 },
+    ])
+  })
+
+  it('computed updatedTableProperties updates "planned_number_units" correctly', () => {
+    const updatedTable = wrapper.vm.updatedTableProperties
+
+    expect(updatedTable.rows).toEqual([
+      { key: 'planned_number_units', value: incrementedUnits },
+      { key: 'other_data', value: 20 },
+    ])
+  })
+
+  it('matches the component snapshot', () => {
+    expect(wrapper.element).toMatchSnapshot()
+  })
+})
+
+
+////////////////////////////
+
+<template>
+  <v-container fluid>
+    <v-row>
+      <v-col>
+        <!-- Pass the incremented_units as a prop to ProductionLine -->
+        <ProductionLine :incremented-units="incremented_units" />
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+import ProductionLine from '@/components/pages/ProcessInformationScreen/ProductionLine.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+export default {
+  name: 'ProcessInformationScreen',
+  components: {
+    ProductionLine,
+  },
+  data() {
+    return {
+      reference_CT: 2000, // Default interval in milliseconds
+      operation_information: [],
+      incremented_units: 0, // To store the incremented units
+      incrementInterval: null, // Interval ID
+    }
+  },
+  methods: {
+    async fetchAllOperations() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-all-operations')
+
+        this.operation_information = [...response.data]
+        this.setInitialUnits()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    async fetchReferenceCT() {
+      try {
+        const api = new FetchAPI()
+        const response = await api.get('/api/get-ref-cycle-time')
+
+        this.reference_CT = response.data[0] || 2000
+        this.restartIncrementer()
+      } catch (error) {
+        console.log(error)
+      }
+    },
+    setInitialUnits() {
+      if (this.operation_information.length > 0) {
+        this.incremented_units = this.operation_information[this.operation_information.length - 1].planned_number_units || 0
+      }
+      this.startIncrementer()
+    },
+    startIncrementer() {
+      this.clearIncrementer()
+      this.incrementInterval = setInterval(() => {
+        this.incremented_units += 1
+      }, this.reference_CT)
+    },
+    restartIncrementer() {
+      this.startIncrementer()
+    },
+    clearIncrementer() {
+      if (this.incrementInterval) {
+        clearInterval(this.incrementInterval)
+      }
+    },
+  },
+  async mounted() {
+    await this.fetchAllOperations()
+    await this.fetchReferenceCT()
+  },
+  beforeDestroy() {
+    this.clearIncrementer()
+  },
+}
+</script>
+
+
+import { mount } from '@vue/test-utils'
+import ProcessInformationScreen from '@/components/pages/ProcessInformationScreen/ProcessInformationScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+// Mock FetchAPI
+jest.mock('@/utility/apiRequest', () => ({
+  FetchAPI: jest.fn().mockImplementation(() => ({
+    get: jest.fn(),
+  })),
+}))
+
+describe('ProcessInformationScreen', () => {
+  let wrapper
+  let mockApiGet
+  let mockSetInterval
+  let mockClearInterval
+
+  beforeEach(() => {
+    // Mocking the API get method
+    mockApiGet = FetchAPI.mock.instances[0].get
+
+    // Mocking setInterval and clearInterval
+    mockSetInterval = jest.spyOn(global, 'setInterval').mockImplementation((cb, delay) => {
+      return setTimeout(cb, delay)
+    })
+    mockClearInterval = jest.spyOn(global, 'clearInterval').mockImplementation(() => {})
+    
+    wrapper = mount(ProcessInformationScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+    wrapper.destroy()
+  })
+
+  test('fetchAllOperations calls API and sets initial units', async () => {
+    const mockResponse = {
+      data: [{ planned_number_units: 5 }],
+    }
+    mockApiGet.mockResolvedValue(mockResponse)
+
+    await wrapper.vm.fetchAllOperations()
+
+    expect(mockApiGet).toHaveBeenCalledWith('/api/get-all-operations')
+    expect(wrapper.vm.operation_information).toEqual(mockResponse.data)
+    expect(wrapper.vm.incremented_units).toBe(5)
+    expect(mockSetInterval).toHaveBeenCalled()
+  })
+
+  test('fetchReferenceCT fetches reference cycle time and calls restartIncrementer', async () => {
+    const mockResponse = { data: [1500] }
+    mockApiGet.mockResolvedValue(mockResponse)
+
+    const restartIncrementerSpy = jest.spyOn(wrapper.vm, 'restartIncrementer')
+
+    await wrapper.vm.fetchReferenceCT()
+
+    expect(mockApiGet).toHaveBeenCalledWith('/api/get-ref-cycle-time')
+    expect(wrapper.vm.reference_CT).toBe(1500)
+    expect(restartIncrementerSpy).toHaveBeenCalled()
+  })
+
+  test('setInitialUnits sets incremented_units correctly', () => {
+    wrapper.vm.operation_information = [{ planned_number_units: 5 }]
+    wrapper.vm.setInitialUnits()
+
+    expect(wrapper.vm.incremented_units).toBe(5)
+    expect(mockSetInterval).toHaveBeenCalled()
+  })
+
+  test('startIncrementer starts the interval and increments units', () => {
+    jest.useFakeTimers() // Mock timers
+
+    wrapper.vm.startIncrementer()
+
+    // The setInterval should be called with the reference_CT
+    expect(mockSetInterval).toHaveBeenCalledWith(expect.any(Function), wrapper.vm.reference_CT)
+
+    // Fast-forward the timer and check if incremented_units is updated
+    jest.advanceTimersByTime(wrapper.vm.reference_CT)
+    expect(wrapper.vm.incremented_units).toBe(1)
+  })
+
+  test('restartIncrementer calls startIncrementer', () => {
+    const startIncrementerSpy = jest.spyOn(wrapper.vm, 'startIncrementer')
+    wrapper.vm.restartIncrementer()
+
+    expect(startIncrementerSpy).toHaveBeenCalled()
+  })
+
+  test('clearIncrementer clears the interval', () => {
+    wrapper.vm.incrementInterval = 12345 // Mock interval ID
+    wrapper.vm.clearIncrementer()
+
+    expect(mockClearInterval).toHaveBeenCalledWith(12345)
+  })
+
+  test('mounted lifecycle calls fetchAllOperations and fetchReferenceCT', async () => {
+    const fetchAllOperationsSpy = jest.spyOn(wrapper.vm, 'fetchAllOperations')
+    const fetchReferenceCTSpy = jest.spyOn(wrapper.vm, 'fetchReferenceCT')
+
+    await wrapper.vm.$nextTick() // Wait for mounted
+
+    expect(fetchAllOperationsSpy).toHaveBeenCalled()
+    expect(fetchReferenceCTSpy).toHaveBeenCalled()
+  })
+
+  test('beforeDestroy lifecycle clears the interval', () => {
+    wrapper.vm.incrementInterval = 12345 // Mock interval ID
+    const clearIncrementerSpy = jest.spyOn(wrapper.vm, 'clearIncrementer')
+
+    wrapper.vm.$destroy()
+
+    expect(clearIncrementerSpy).toHaveBeenCalled()
+  })
+})
+
+
+
+
+
+
