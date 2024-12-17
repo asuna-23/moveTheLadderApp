@@ -1,0 +1,59 @@
+@operation_information_router.route("/api/update-units/<int:process_id>", methods=["PUT"])
+def update_units(process_id):
+    """Update the planned_number_units for a specific operation"""
+    from flask import request
+    from src.setup_db_example.models.m_operation_information import db  # Import db instance
+
+    try:
+        data = request.json
+        planned_number_units = data.get("planned_number_units")
+
+        if planned_number_units is None:
+            return {"success": False, "message": "Missing planned_number_units"}, 400
+
+        # Query the database for the specific operation
+        operation = OperationInformationDb.query.filter_by(process_id=process_id).first()
+
+        if not operation:
+            return {"success": False, "message": "Operation not found"}, 404
+
+        # Update the planned_number_units value
+        operation.planned_number_units = planned_number_units
+        db.session.commit()
+
+        return {
+            "success": True,
+            "message": "PLANNED_NUMBER_UNITS UPDATED SUCCESSFULLY",
+            "updated_value": planned_number_units,
+        }, 200
+
+    except Exception as e:
+        return {"success": False, "message": f"Error updating units: {str(e)}"}, 500
+
+
+startIncrementer() {
+  this.clearIncrementer()
+  this.incrementInterval = setInterval(async () => {
+    this.incremented_units += 1
+
+    // Call the API to update the planned_number_units
+    await this.updatePlannedUnits()
+  }, this.reference_CT)
+},
+
+async updatePlannedUnits() {
+  try {
+    const api = new FetchAPI()
+    const lastOperation = this.operation_information[this.operation_information.length - 1]
+
+    if (lastOperation) {
+      const processId = lastOperation.process_id
+      const payload = { planned_number_units: this.incremented_units }
+
+      await api.put(`/api/update-units/${processId}`, payload)
+      console.log("Units updated successfully")
+    }
+  } catch (error) {
+    console.error("Failed to update planned number units:", error)
+  }
+}
