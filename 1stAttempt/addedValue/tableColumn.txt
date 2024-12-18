@@ -1,0 +1,423 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-show="itemTable.TABLE_HEADER.length != 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          id="custom-header"
+        >
+          <common-label :item="column"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_ROW"
+          :key="columnIndex"
+        >
+          <!-- Render label dynamically -->
+          <common-label
+            :item="{
+              ...column,
+              columnIndex: columnIndex,
+              display: {
+                label: generateLabel(column.display.label, columnIndex),
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    plannedUnits: {
+	type: Number;
+	default: 0
+    }
+  },
+  methods: {
+    generateLabel(label, columnIndex) {
+      switch (columnIndex) {
+        case 0:
+          return plannedUnits ? `${plannedUnits} 台`: `${label} 台` ;
+        case 1:
+          return `Production: ${label}`;
+        case 2:
+          return `Efficiency: ${label}`;
+        case 3:
+          return `Downtime: ${label}`;
+        case 4:
+          return `Quality: ${label}`;
+        default:
+          return `Default: ${label}`;
+      }
+    },
+  },
+};
+</script>
+
+///////////
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    plannedUnits: {
+      type: Number,
+      default: 0, // Default to 0 if not passed
+    },
+  },
+  methods: {
+    generateLabel(label, columnIndex) {
+      switch (columnIndex) {
+        case 0:
+          // If plannedUnits is 0, just return the label without '台'
+          return this.plannedUnits && this.plannedUnits !== 0
+            ? `${this.plannedUnits} 台`
+            : `${label} 台`; // Fallback to label if no plannedUnits, remove 台
+        case 1:
+          return `Production: ${label}`;
+        case 2:
+          return `Efficiency: ${label}`;
+        case 3:
+          return `Downtime: ${label}`;
+        case 4:
+          return `Quality: ${label}`;
+        default:
+          return `Default: ${label}`;
+      }
+    },
+  },
+};
+</script>
+
+#####
+
+import { shallowMount } from '@vue/test-utils';
+import CommonTable from './CommonTable.vue';
+
+describe('CommonTable.vue', () => {
+  let wrapper;
+
+  // Create a helper function to mount the component
+  const mountComponent = (plannedUnits = 0) => {
+    wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable: {
+          TABLE_HEADER: ['Header 1', 'Header 2', 'Header 3'],
+          TABLE_ROW: [
+            { display: { label: 'Label 1' } },
+            { display: { label: 'Label 2' } },
+            { display: { label: 'Label 3' } },
+          ],
+        },
+        plannedUnits,
+      },
+    });
+  };
+
+  // Test case when plannedUnits is passed and is greater than 0
+  it('returns plannedUnits with 台 for column index 0 when plannedUnits is greater than 0', () => {
+    mountComponent(100); // Passing plannedUnits as 100
+
+    const result = wrapper.vm.generateLabel('Label 1', 0); // Calling generateLabel with columnIndex 0
+    expect(result).toBe('100 台');
+  });
+
+  // Test case when plannedUnits is 0
+  it('returns the label with 台 for column index 0 when plannedUnits is 0', () => {
+    mountComponent(0); // Passing plannedUnits as 0
+
+    const result = wrapper.vm.generateLabel('Label 1', 0); // Calling generateLabel with columnIndex 0
+    expect(result).toBe('Label 1 台');
+  });
+
+  // Test case when plannedUnits is not passed (should default to 0)
+  it('returns the label with 台 for column index 0 when plannedUnits is not passed', () => {
+    mountComponent(); // No plannedUnits passed, defaults to 0
+
+    const result = wrapper.vm.generateLabel('Label 1', 0); // Calling generateLabel with columnIndex 0
+    expect(result).toBe('Label 1 台');
+  });
+
+  // Test case for column index 1
+  it('returns "Production: label" for column index 1', () => {
+    mountComponent(100); // You can pass any value of plannedUnits here, as it does not affect column 1
+
+    const result = wrapper.vm.generateLabel('Label 2', 1); // Calling generateLabel with columnIndex 1
+    expect(result).toBe('Production: Label 2');
+  });
+
+  // Test case for column index 2
+  it('returns "Efficiency: label" for column index 2', () => {
+    mountComponent(100);
+
+    const result = wrapper.vm.generateLabel('Label 3', 2); // Calling generateLabel with columnIndex 2
+    expect(result).toBe('Efficiency: Label 3');
+  });
+
+  // Test case for column index 3
+  it('returns "Downtime: label" for column index 3', () => {
+    mountComponent(100);
+
+    const result = wrapper.vm.generateLabel('Label 4', 3); // Calling generateLabel with columnIndex 3
+    expect(result).toBe('Downtime: Label 4');
+  });
+
+  // Test case for column index 4
+  it('returns "Quality: label" for column index 4', () => {
+    mountComponent(100);
+
+    const result = wrapper.vm.generateLabel('Label 5', 4); // Calling generateLabel with columnIndex 4
+    expect(result).toBe('Quality: Label 5');
+  });
+
+  // Test case for a default label if column index is not handled
+  it('returns "Default: label" for column index not handled by the switch', () => {
+    mountComponent(100);
+
+    const result = wrapper.vm.generateLabel('Label 6', 5); // Calling generateLabel with an unknown columnIndex
+    expect(result).toBe('Default: Label 6');
+  });
+});
+
+
+
+///////////
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-show="itemTable.TABLE_HEADER.length != 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-header"
+        >
+          <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          v-show="itemTable.TABLE_ROW.length != 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_ROW"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <!-- Handle specific logic for columnIndex -->
+          <common-label
+            :item="getDynamicColumn(column, columnIndex)"
+            class="text-subtitle-1 font-weight-regular"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue'
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    plannedUnits: {
+      type: Number,
+      default: 0,
+    },
+  },
+  methods: {
+    /**
+     * Dynamically adjust column data based on columnIndex
+     */
+    getDynamicColumn(column, columnIndex) {
+      if (columnIndex === 0 && this.plannedUnits) {
+        return {
+          ...column,
+          display: {
+            label: `${this.plannedUnits} 台`,
+          },
+        }
+      } else if (columnIndex === 1) {
+        return {
+          ...column,
+          display: {
+            label: column.display.label || 'Column 1 Content',
+          },
+        }
+      } else if (columnIndex === 2) {
+        return {
+          ...column,
+          display: {
+            label: column.display.label || 'Column 2 Content',
+          },
+        }
+      }
+      return column // Default fallback for other columns
+    },
+  },
+}
+</script>
+
+###########
+
+import { shallowMount } from '@vue/test-utils';
+import CommonTable from './CommonTable.vue';
+
+describe('CommonTable.vue', () => {
+  // Test case for column index 0 with plannedUnits
+  it('returns plannedUnits with 台 for column index 0 when plannedUnits is passed', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [{ display: { label: 'Label 1' }, directives: {} }],
+    };
+
+    // Mount component with plannedUnits as 100
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 100,
+      },
+    });
+
+    const result = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 0);
+    expect(result.display.label).toBe('100 台');
+  });
+
+  // Test case for column index 0 with no plannedUnits
+  it('returns the label with 台 for column index 0 when plannedUnits is not passed', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [{ display: { label: 'Label 1' }, directives: {} }],
+    };
+
+    // Mount component with plannedUnits as 0
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 0,
+      },
+    });
+
+    const result = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 0);
+    expect(result.display.label).toBe('Label 1');
+  });
+
+  // Test case for column index 1
+  it('returns "Column 1 Content" for column index 1 when column label is not provided', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [{ display: {}, directives: {} }],
+    };
+
+    // Mount component with any plannedUnits value
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 100,
+      },
+    });
+
+    const result = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 1);
+    expect(result.display.label).toBe('Column 1 Content');
+  });
+
+  // Test case for column index 2
+  it('returns "Column 2 Content" for column index 2 when column label is not provided', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [{ display: {}, directives: {} }],
+    };
+
+    // Mount component with any plannedUnits value
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 100,
+      },
+    });
+
+    const result = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 2);
+    expect(result.display.label).toBe('Column 2 Content');
+  });
+
+  // Test case for other column indices
+  it('returns the column unchanged for other column indices', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [{ display: { label: 'Default Column' }, directives: {} }],
+    };
+
+    // Mount component with any plannedUnits value
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 100,
+      },
+    });
+
+    const result = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 3);
+    expect(result.display.label).toBe('Default Column');
+  });
+
+  // Test case for column index with an existing label
+  it('returns the existing label for columns 1 and 2 if label is provided', () => {
+    const itemTable = {
+      TABLE_HEADER: [{ directives: {} }],
+      TABLE_ROW: [
+        { display: { label: 'Custom Label 1' }, directives: {} },
+        { display: { label: 'Custom Label 2' }, directives: {} },
+      ],
+    };
+
+    // Mount component with any plannedUnits value
+    const wrapper = shallowMount(CommonTable, {
+      propsData: {
+        itemTable,
+        plannedUnits: 100,
+      },
+    });
+
+    const resultCol1 = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[0], 1);
+    const resultCol2 = wrapper.vm.getDynamicColumn(itemTable.TABLE_ROW[1], 2);
+
+    expect(resultCol1.display.label).toBe('Custom Label 1');
+    expect(resultCol2.display.label).toBe('Custom Label 2');
+  });
+});
+
+
+
+/////
