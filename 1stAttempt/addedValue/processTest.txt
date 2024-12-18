@@ -1,0 +1,103 @@
+import { mount } from '@vue/test-utils'
+import ProcessInformationScreen from '@/components/pages/ProcessInformationScreen/ProcessInformationScreen.vue'
+import { FetchAPI } from '@/utility/apiRequest'
+
+// Mock the FetchAPI class to mock the API calls
+jest.mock('@/utility/apiRequest', () => ({
+  FetchAPI: jest.fn().mockImplementation(() => ({
+    get: jest.fn(),
+    put: jest.fn(),
+  })),
+}))
+
+describe('ProcessInformationScreen.vue', () => {
+  let wrapper
+  let apiMock
+
+  beforeEach(() => {
+    apiMock = new FetchAPI()
+
+    // Mount the component
+    wrapper = mount(ProcessInformationScreen)
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('fetches all operations and initializes incrementer on mounted', async () => {
+    const mockData = [{ planned_number_units: 10, process_id: 1 }]
+    apiMock.get.mockResolvedValueOnce({ data: mockData })
+    await wrapper.vm.fetchAllOperations()
+
+    // Check if operation_information is populated correctly
+    expect(wrapper.vm.operation_information).toEqual(mockData)
+    expect(wrapper.vm.incremented_units).toBe(mockData[0].planned_number_units)
+  })
+
+  it('fetches reference cycle time and restarts the incrementer', async () => {
+    const mockCT = { success: true, data: [{ reference_cycle_time: 1 }] }
+    apiMock.get.mockResolvedValueOnce(mockCT)
+    await wrapper.vm.fetchReferenceCT()
+
+    expect(wrapper.vm.reference_CT).toBe(1000)  // 1 second in milliseconds
+    expect(wrapper.vm.incrementInterval).toBeDefined() // Check if incrementer started
+  })
+
+  it('updates planned units with correct API call', async () => {
+    const mockOperation = { process_id: 1 }
+    wrapper.setData({
+      operation_information: [mockOperation],
+      incremented_units: 10,
+    })
+
+    apiMock.put.mockResolvedValueOnce({})
+
+    await wrapper.vm.updatePlannedUnits()
+
+    expect(apiMock.put).toHaveBeenCalledWith(`/api/update-units/${mockOperation.process_id}`, { planned_number_units: 10 })
+  })
+
+  it('initializes incrementer correctly when there are operations', () => {
+    const mockOperation = { planned_number_units: 10 }
+    wrapper.setData({ operation_information: [mockOperation] })
+    
+    wrapper.vm.initializeIncrementer()
+
+    expect(wrapper.vm.incremented_units).toBe(mockOperation.planned_number_units)
+  })
+
+  it('starts the incrementer correctly', () => {
+    jest.useFakeTimers()
+    const mockOperation = { planned_number_units: 10 }
+    wrapper.setData({ operation_information: [mockOperation], reference_CT: 1000 })
+
+    wrapper.vm.startIncrementer()
+
+    // Simulate passing time
+    jest.advanceTimersByTime(1000)
+
+    expect(wrapper.vm.incremented_units).toBe(mockOperation.planned_number_units + 1)
+
+    jest.clearAllTimers()
+  })
+
+  it('clears the incrementer correctly', () => {
+    jest.useFakeTimers()
+    wrapper.setData({ incrementInterval: 1 })
+
+    wrapper.vm.clearIncrementer()
+
+    expect(clearInterval).toHaveBeenCalledWith(1)
+
+    jest.clearAllTimers()
+  })
+
+  it('restarts the incrementer', () => {
+    const startIncrementerSpy = jest.spyOn(wrapper.vm, 'startIncrementer')
+
+    wrapper.vm.restartIncrementer()
+
+    expect(startIncrementerSpy).toHaveBeenCalled()
+  })
+})
