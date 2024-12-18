@@ -1,0 +1,86 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-show="itemTable.TABLE_HEADER.length !== 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-header"
+        >
+          <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr
+        v-show="itemTable.TABLE_ROW.length !== 0"
+        v-for="(row, rowIndex) in itemTable.TABLE_ROW"
+        :key="rowIndex"
+        v-bind="itemTable.TR_DIRECTIVES"
+      >
+        <td
+          v-for="(column, columnIndex) in row"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <common-label
+            :item="getDynamicColumn(column, rowIndex, columnIndex)"
+            class="text-subtitle-1 font-weight-regular"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    plannedUnits: {
+      type: Number,
+      default: 0,
+    },
+  },
+  methods: {
+    /**
+     * Dynamically adjust column data based on rowIndex and columnIndex
+     */
+    getDynamicColumn(column, rowIndex, columnIndex) {
+      if (columnIndex === 0 && this.plannedUnits) {
+        return {
+          ...column,
+          display: {
+            label: `${this.plannedUnits} 台`,
+          },
+        };
+      } else if (columnIndex === 1) {
+        return {
+          ...column,
+          display: {
+            label: column.display.label || 'Column 1 Content',
+          },
+        };
+      } else if (columnIndex === 2) {
+        return {
+          ...column,
+          display: {
+            label: column.display.label || 'Column 2 Content',
+          },
+        };
+      }
+      return column; // Default fallback for other columns
+    },
+  },
+};
+</script>
