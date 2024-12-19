@@ -1,0 +1,109 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          id="custom-header"
+        >
+          <common-label :item="column"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in itemTable.TABLE_ROW" :key="rowIndex">
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+        >
+          <!-- Use scoped slot or dynamic rendering -->
+          <slot 
+            name="cell" 
+            :row="row" 
+            :column="column" 
+            :rowIndex="rowIndex" 
+            :columnIndex="columnIndex"
+          >
+            <common-label
+              :item="{
+                ...column,
+                value: row[column.key], 
+                display: {
+                  label: generateLabel(row[column.key], rowIndex, columnIndex),
+                },
+              }"
+            ></common-label>
+          </slot>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      default: () => ({
+        TABLE_HEADER: [],
+        TABLE_ROW: [],
+      }),
+    },
+    plannedUnits: {
+      type: Number,
+      default: 0,
+    },
+  },
+  methods: {
+    generateLabel(value, rowIndex, columnIndex) {
+      // Dynamically customize the label based on column and row index
+      switch (columnIndex) {
+        case 0:
+          return this.plannedUnits ? `${this.plannedUnits} 台` : `${value} 台`;
+        case 1:
+          return `Production: ${value}`;
+        case 2:
+          return `Efficiency: ${value}`;
+        case 3:
+          return `Downtime: ${value}`;
+        case 4:
+          return `Quality: ${value}`;
+        default:
+          return `Default: ${value}`;
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#custom-header {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  text-align: left;
+}
+
+td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+</style>
+
+
+////
+
