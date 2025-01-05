@@ -1,0 +1,118 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="'header-' + columnIndex"
+          v-bind="column.directives"
+          id="custom-header"
+        >
+          <slot name="header" :column="column" :index="columnIndex">
+            <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+          </slot>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in itemTable.TABLE_ROW" :key="'row-' + rowIndex">
+        <td
+          v-for="(column, columnIndex) in row"
+          :key="'cell-' + rowIndex + '-' + columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <slot
+            name="cell"
+            :row="row"
+            :column="column"
+            :rowIndex="rowIndex"
+            :columnIndex="columnIndex"
+          >
+            <common-label
+              :item="{
+                ...column,
+                columnIndex: columnIndex,
+                display: {
+                  label: displayColumnLabel(column.display.label, columnIndex),
+                },
+              }"
+            ></common-label>
+          </slot>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    firstColumn: Object,
+    secondColumn: Object,
+    thirdColumn: Object,
+  },
+  methods: {
+    displayColumnLabel(label, columnIndex) {
+      const column = [this.firstColumn, this.secondColumn, this.thirdColumn][columnIndex];
+      if (column && (column.value <= 0 || column.value === '')) {
+        return `${label}`;
+      }
+      return column ? `${column.value} ${column.symbol}` : `${label}`;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table th {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #2e2e2e;
+  color: #ffffff;
+  width: 30rem;
+}
+
+.custom-table td {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #3a3a3a;
+  color: #ffffff;
+}
+
+#custom-header {
+  border-color: rgb(204, 204, 204);
+  height: 2.6rem;
+  text-align: center;
+  font-weight: bolder;
+}
+
+#custom-row {
+  border-color: rgb(204, 204, 204);
+  height: 2.5rem;
+  text-align: center;
+  font-weight: bolder;
+}
+</style>
+
+
+------
+
+<common-table :item-table="PROUDUCT_LINE_TABLE">
+  <template #header="{ column, index }">
+    <div :style="{ color: 'blue' }">
+      Custom Header: {{ column.display.label }}
+    </div>
+  </template>
+  <template #cell="{ row, column, rowIndex, columnIndex }">
+    <div>
+      Row {{ rowIndex + 1 }}, Col {{ columnIndex + 1 }}: {{ column.display.label }}
+    </div>
+  </template>
+</common-table>

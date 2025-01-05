@@ -1,0 +1,103 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(header, columnIndex) in headers"
+          :key="columnIndex"
+          v-bind="header.directives"
+          id="custom-header"
+        >
+          <common-label :item="header" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
+        <td
+          v-for="(cell, columnIndex) in row"
+          :key="columnIndex"
+          v-bind="cell.directives"
+          id="custom-row"
+        >
+          <common-label
+            :item="{
+              ...cell,
+              columnIndex: columnIndex,
+              display: {
+                label: displayColumnLabel(cell.display.label, columnIndex),
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue'
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    headers: {
+      type: Array, // Expecting an array of header objects
+      required: true,
+    },
+    rows: {
+      type: Array, // Expecting an array of arrays for rows and cells
+      required: true,
+    },
+    firstColumn: {
+      type: Object,
+    },
+    secondColumn: {
+      type: Object,
+    },
+    thirdColumn: {
+      type: Object,
+    },
+  },
+  methods: {
+    displayColumnLabel(label, columnIndex) {
+      const columns = [this.firstColumn, this.secondColumn, this.thirdColumn];
+      const column = columns[columnIndex];
+      if (column && (column.value || column.value === 0)) {
+        return `${column.value} ${column.symbol || ''}`;
+      }
+      return label;
+    },
+  },
+}
+</script>
+
+<style scoped>
+.custom-table th {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #2e2e2e;
+  color: #ffffff;
+  width: 30rem;
+}
+
+.custom-table td {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #3a3a3a;
+  color: #ffffff;
+}
+
+#custom-header {
+  border-color: rgb(204, 204, 204);
+  height: 2.6rem;
+  text-align: center;
+  font-weight: bolder;
+}
+
+#custom-row {
+  border-color: rgb(204, 204, 204);
+  height: 2.5rem;
+  text-align: center;
+  font-weight: bolder;
+}
+</style>

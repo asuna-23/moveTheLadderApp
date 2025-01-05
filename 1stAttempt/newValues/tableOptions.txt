@@ -1,0 +1,279 @@
+//// v-if v-else
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-header"
+        >
+          <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Render rows dynamically if available -->
+      <tr v-if="rows.length" v-for="(row, rowIndex) in rows" :key="rowIndex">
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_COLUMN"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <common-label
+            :item="{
+              ...column,
+              display: {
+                label: displayColumnLabel(column.display.label, columnIndex, rowIndex),
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+
+      <!-- Render fallback single row when rows are empty -->
+      <tr v-else>
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_COLUMN"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <common-label
+            :item="{
+              ...column,
+              display: {
+                label: displayColumnLabel(column.display.label, columnIndex),
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    rows: {
+      type: Array,
+      default: () => [], // Handles cases where rows are not provided
+    },
+  },
+  methods: {
+    displayColumnLabel(label, columnIndex, rowIndex = null) {
+      return label; // Simplified for brevity
+    },
+  },
+};
+</script>
+
+
+
+-------------------------------------------- default row
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          id="custom-header"
+        >
+          <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in rows.length ? rows : [itemTable.DEFAULT_ROW]" :key="rowIndex">
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_COLUMN"
+          :key="columnIndex"
+          id="custom-row"
+        >
+          <common-label
+            :item="{
+              ...column,
+              display: {
+                label: row[column.key] || column.display.label,
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    rows: {
+      type: Array,
+      default: () => [],
+    },
+  },
+};
+</script>
+
+
+~~~~
+
+const PRODUCT_LINE_TABLE = {
+  TABLE_HEADER: [
+    { display: { label: "Product ID" } },
+    { display: { label: "Product Name" } },
+  ],
+  TABLE_COLUMN: [
+    { key: "productId", display: { label: "Default ID" } },
+    { key: "productName", display: { label: "Default Name" } },
+  ],
+  DEFAULT_ROW: {
+    productId: "12345",
+    productName: "Sample Product",
+  },
+};
+
+---------------- ###
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th v-for="(header, index) in headers" :key="index">
+          <CommonLabel :item="{ display: { label: header.display.label } }" />
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in rows.length ? rows : [itemTable.DEFAULT_ROW]" :key="rowIndex">
+        <td v-for="(cell, cellIndex) in row" :key="cellIndex">
+          <!-- Use displayColumnLabel for specific cells in the row -->
+          <CommonLabel 
+            :item="{ 
+              display: { 
+                label: displayColumnLabel(cell, cellIndex) 
+              } 
+            }" 
+          />
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    headers: {
+      type: Array, // Array of header objects
+      required: true,
+    },
+    rows: {
+      type: Array, // Array of arrays for rows and cells
+      required: true,
+    },
+    firstColumn: {
+      type: Object, // Optional: Column-specific overrides for the first column
+    },
+    secondColumn: {
+      type: Object, // Optional: Column-specific overrides for the second column
+    },
+    thirdColumn: {
+      type: Object, // Optional: Column-specific overrides for the third column
+    },
+  },
+  methods: {
+    displayColumnLabel(cellValue, columnIndex) {
+      const columns = [this.firstColumn, this.secondColumn, this.thirdColumn];
+      const column = columns[columnIndex];
+      if (column && (column.value || column.value === 0)) {
+        // If a column-specific value exists, combine it with the symbol (if any)
+        return `${column.value}${column.symbol ? ' ' + column.symbol : ''}`;
+      }
+      // Fallback to the default cell value
+      return cellValue;
+    },
+  },
+};
+</script>
+
+
+
+------------------------------------------ parent default row
+
+<CommonTable
+  :itemTable="PRODUCT_LINE_TABLE"
+  :rows="rows.length ? rows : [defaultRow]"
+/>
+
+
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          id="custom-header"
+        >
+          <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_COLUMN"
+          :key="columnIndex"
+          id="custom-row"
+        >
+          <common-label
+            :item="{
+              ...column,
+              display: {
+                label: row[column.key] || column.display.label,
+              },
+            }"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    rows: {
+      type: Array,
+      default: () => [],
+    },
+  },
+};
+</script>
+
+
+
+
