@@ -101,3 +101,55 @@ export default {
   font-weight: bolder;
 }
 </style>
+
+
+//////////////////// test
+
+// Import or mock the component where the method exists
+// Assuming the method is part of a component or class, adjust accordingly
+import { shallowMount } from '@vue/test-utils';
+import YourComponent from '@/path/to/YourComponent.vue';
+
+describe('displayColumnLabel', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(YourComponent, {
+      data() {
+        return {
+          firstColumn: { value: 100, symbol: '$' },
+          secondColumn: { value: 200 },
+          thirdColumn: { value: 0, symbol: '%' },
+        };
+      },
+    });
+  });
+
+  test('returns value and symbol for a valid column', () => {
+    const result = wrapper.vm.displayColumnLabel('Default Value', 0);
+    expect(result).toBe('100 $');
+  });
+
+  test('returns value without symbol for a valid column', () => {
+    const result = wrapper.vm.displayColumnLabel('Default Value', 1);
+    expect(result).toBe('200');
+  });
+
+  test('handles value of 0 correctly', () => {
+    const result = wrapper.vm.displayColumnLabel('Default Value', 2);
+    expect(result).toBe('0 %');
+  });
+
+  test('returns default cell value for an invalid column index', () => {
+    const result = wrapper.vm.displayColumnLabel('Default Value', 3);
+    expect(result).toBe('Default Value');
+  });
+
+  test('returns default cell value when column is undefined', () => {
+    wrapper.setData({
+      secondColumn: undefined, // Simulate an undefined column
+    });
+    const result = wrapper.vm.displayColumnLabel('Default Value', 1);
+    expect(result).toBe('Default Value');
+  });
+});
