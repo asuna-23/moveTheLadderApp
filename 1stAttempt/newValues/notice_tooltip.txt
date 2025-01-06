@@ -1,0 +1,340 @@
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span
+                class="truncate-text"
+                :title="`${error.processID}-${error.errorCode}: ${error.errorMessage}`"
+              >
+                {{ error.processID }}-{{ error.errorCode }}: {{
+                error.errorMessage }}
+              </span>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate truncation with ellipses',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage: 'Process B with some long text',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+  .error-item.v-list-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    cursor: pointer;
+  }
+</style>
+
+OR
+
+<style scoped>
+  .error-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+    border-radius: 10px !important; /* Use !important to ensure the border-radius is applied */
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    cursor: pointer;
+  }
+</style>
+
+
+
+##################
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span
+                class="truncate-text"
+                :title="`${error.processID}-${error.errorCode}: ${error.errorMessage}`"
+              >
+                {{ error.processID }}-{{ error.errorCode }}: {{
+                error.errorMessage }}
+              </span>
+              <div class="tooltip">
+                {{ error.processID }}-{{ error.errorCode }}: {{
+                error.errorMessage }}
+              </div>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate truncation with ellipses',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage: 'Process B with some long text',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+.error-item {
+  background-color: yellow;
+  color: red;
+  padding: 10px;
+  border-radius: 15px;
+  margin-bottom: 8px;
+  border: 2px solid red;
+  overflow: hidden; 
+}
+
+.truncate-text-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%; 
+
+.truncate-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%; 
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip {
+  visibility: hidden;
+  background-color: black;
+  color: white;
+  text-align: left;
+  padding: 5px;
+  border-radius: 5px;
+  position: absolute;
+  z-index: 1000;
+  top: 120%; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  width: max-content; 
+  max-width: 300px; 
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.truncate-text:hover + .tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+</style>
+
+//// jest test
+
+import { shallowMount } from '@vue/test-utils'
+import ErrorList from '@/components/ErrorList.vue'
+
+describe('ErrorList.vue', () => {
+  let wrapper
+
+  beforeEach(() => {
+    wrapper = shallowMount(ErrorList)
+  })
+
+  it('renders a list of errors', () => {
+    const listItems = wrapper.findAll('.error-item')
+    expect(listItems).toHaveLength(2)  // limitedErrors should return 2 items
+  })
+
+  it('correctly truncates long error messages', () => {
+    const truncatedText = wrapper.find('.truncate-text').text()
+    expect(truncatedText).toBe('1-E001: This is a very long process name to...')
+  })
+
+  it('displays the tooltip when hovering over a truncated error message', async () => {
+    const truncatedText = wrapper.find('.truncate-text')
+    await truncatedText.trigger('mouseover')
+    const tooltip = wrapper.find('.tooltip')
+    expect(tooltip.isVisible()).toBe(true)
+  })
+
+  it('calls resolveError and removes the error from the list when clicked', async () => {
+    const initialErrors = wrapper.vm.errors.length
+    const button = wrapper.findAll('v-btn').at(0)
+    await button.trigger('click')
+    expect(wrapper.vm.errors.length).toBe(initialErrors - 1)
+  })
+
+  it('does not show more than 2 errors in the list', () => {
+    const listItems = wrapper.findAll('.error-item')
+    expect(listItems.length).toBe(2)
+  })
+
+  it('removes the correct error when resolveError is called', async () => {
+    const initialErrors = [...wrapper.vm.errors]
+    await wrapper.vm.resolveError(0)
+    expect(wrapper.vm.errors[0]).not.toBe(initialErrors[0])
+    expect(wrapper.vm.errors.length).toBe(initialErrors.length - 1)
+  })
+})
+
+/////////// test case
+
+import { shallowMount } from '@vue/test-utils'
+import ErrorList from '@/components/ErrorList.vue'
+
+describe('Methods and Computed Properties', () => {
+  let wrapper
+
+  beforeEach(() => {
+    wrapper = shallowMount(ErrorList)
+  })
+
+  it('limitedErrors computed property returns only the first 2 errors', () => {
+    const limitedErrors = wrapper.vm.limitedErrors
+    expect(limitedErrors).toHaveLength(2) // limitedErrors should return only 2 items
+    expect(limitedErrors[0].processID).toBe(1)  // Check the first error's processID
+    expect(limitedErrors[1].processID).toBe(2)  // Check the second error's processID
+  })
+
+  it('resolveError method removes the correct error from the list', () => {
+    const initialErrors = [...wrapper.vm.errors]
+    const errorIndexToRemove = 1
+    wrapper.vm.resolveError(errorIndexToRemove)
+    
+    // After resolving error at index 1, the errors list should not have that error
+    expect(wrapper.vm.errors.length).toBe(initialErrors.length - 1)
+    expect(wrapper.vm.errors[errorIndexToRemove]).not.toEqual(initialErrors[errorIndexToRemove])
+  })
+})

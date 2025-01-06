@@ -1,0 +1,108 @@
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span class="truncate-text">
+                {{ error.processID }}-{{ error.errorCode }}: {{ error.errorMessage }}
+              </span>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate truncation with ellipses',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage: 'Process B with some long text',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+  .error-item.v-list-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease; /* Adds a smooth transition for hover effect */
+  }
+
+  .truncate-text:hover {
+    white-space: normal; /* Allows text to wrap and show fully */
+    overflow: visible; /* Shows overflow content */
+    text-overflow: clip; /* Ensures no ellipsis on hover */
+    background-color: rgba(255, 255, 255, 0.8); /* Light background on hover */
+    padding: 5px; /* Adds padding to hover effect */
+    border-radius: 5px; /* Rounds the corners of the background */
+    z-index: 10;
+  }
+</style>

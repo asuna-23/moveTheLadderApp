@@ -1,0 +1,308 @@
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+          >
+            <v-list-item-content>
+              <v-list-item-title>
+                {{ error.processName }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                Error Code: {{ error.errorCode }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      errors: [
+        { errorCode: "E001", processName: "Process A" },
+        { errorCode: "E002", processName: "Process B" },
+        { errorCode: "E003", processName: "Process C" },
+        { errorCode: "E004", processName: "Process D" },
+      ],
+    };
+  },
+  computed: {
+    limitedErrors() {
+      return this.errors.slice(0, 2); // Limits to the first 2 rows
+    },
+  },
+};
+</script>
+
+
+---------------------
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item v-for="(error, index) in limitedErrors" :key="index">
+            <v-list-item-content>
+              <v-list-item-title> {{ error.processName }} </v-list-item-title>
+              <v-list-item-subtitle>
+                Error Code: {{ error.errorCode }}
+              </v-list-item-subtitle>
+            </v-list-item-content>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          { errorCode: 'E001', processName: 'Process A' },
+          { errorCode: 'E002', processName: 'Process B' },
+          { errorCode: 'E003', processName: 'Process C' },
+          { errorCode: 'E004', processName: 'Process D' },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        // Automatically adjust and display only unresolved errors (limit to 2)
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+
+///////////////////
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+            title="Hover to see full text"
+          >
+            <v-list-item-content>
+              <v-list-item-title class="truncate-text">
+                {{ error.processID}}-{{error.errorCode}}{{error.errorMessage}}
+              </v-list-item-title>
+            </v-list-item-content>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate truncation with ellipses',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage: 'Process B with some long text',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        // Automatically adjust and display only unresolved errors (limit to 2)
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+  .error-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden; /* Ensure content stays within bounds */
+  }
+
+  .truncate-text {
+    white-space: nowrap; /* Prevent text from breaking into multiple lines */
+    overflow: hidden; /* Hide overflowing text */
+    text-overflow: ellipsis; /* Add ellipses when text overflows */
+    max-width: 200px; /* Adjust as needed for responsiveness */
+    display: inline-block; /* Ensure it works with ellipses */
+    cursor: pointer; /* Show pointer to indicate hoverability */
+  }
+
+  .truncate-text:hover {
+    white-space: normal; /* Allow text to wrap on hover */
+    overflow: visible; /* Show the full text */
+    background-color: #fff; /* Optional: highlight text when hovered */
+    z-index: 10; /* Ensure it appears above other content */
+    position: absolute; /* Allow it to expand without affecting layout */
+    padding: 5px; /* Optional: make the hover text more readable */
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2); /* Optional: add shadow to the hover text */
+  }
+</style>
+
+////////////////////////////////
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+            title="Hover to see full text"
+          >
+              <v-list-item-title class="truncate-text">
+                {{ error.processID}}-{{error.errorCode}}{{error.errorMessage}}
+              </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate truncation with ellipses',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage: 'Process B with some long text',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        // Automatically adjust and display only unresolved errors (limit to 2)
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+  .error-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden; /* Ensure content stays within bounds */
+  }
+
+  .truncate-text {
+    white-space: nowrap; /* Prevent text from breaking into multiple lines */
+    overflow: hidden; /* Hide overflowing text */
+    text-overflow: ellipsis; /* Add ellipses when text overflows */
+    max-width: 100%; /* Adjust as needed for responsiveness */
+    display: inline-block; /* Ensure it works with ellipses */
+    cursor: pointer; /* Show pointer to indicate hoverability */
+    border: 1px solid black;
+  }
+
+  .truncate-text:hover {
+    white-space: normal; /* Allow text to wrap on hover */
+    overflow: visible; /* Show the full text */
+    background-color: #fff; /* Optional: highlight text when hovered */
+    z-index: 10; /* Ensure it appears above other content */
+    position: absolute; /* Allow it to expand without affecting layout */
+    padding: 5px; /* Optional: make the hover text more readable */
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2); /* Optional: add shadow to the hover text */
+  }
+</style>
+
