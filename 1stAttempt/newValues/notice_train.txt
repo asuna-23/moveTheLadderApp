@@ -1,0 +1,114 @@
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(error, index) in limitedErrors"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span class="scrolling-text">
+                {{ error.processID }}-{{ error.errorCode }}: {{
+                error.errorMessage }}
+              </span>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveError(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        errors: [
+          {
+            processID: 1,
+            errorCode: 'E001',
+            errorMessage:
+              'This is a very long process name to demonstrate scrolling text effect.',
+          },
+          {
+            processID: 2,
+            errorCode: 'E002',
+            errorMessage:
+              'Process B with some long text that moves horizontally',
+          },
+          {
+            processID: 3,
+            errorCode: 'E003',
+            errorMessage: 'Another example of a very long process name.',
+          },
+          {
+            processID: 4,
+            errorCode: 'E004',
+            errorMessage: 'Short Process Name',
+          },
+        ],
+      }
+    },
+    computed: {
+      limitedErrors() {
+        return this.errors.slice(0, 2)
+      },
+    },
+    methods: {
+      resolveError(index) {
+        // Remove the resolved error from the array
+        this.errors.splice(index, 1)
+      },
+    },
+  }
+</script>
+
+<style scoped>
+  .error-item.v-list-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  /* Container for scrolling effect */
+  .scrolling-text {
+    display: inline-block;
+    white-space: nowrap;
+    padding-left: 100%; /* Starts the text from off-screen */
+    animation: scrollText 12s linear infinite; /* Scrolls the text */
+  }
+
+  /* Keyframes for text scrolling */
+  @keyframes scrollText {
+    0% {
+      transform: translateX(0); /* Starts from right off-screen */
+    }
+    100% {
+      transform: translateX(
+        -100%
+      ); /* Scrolls completely off-screen to the left */
+    }
+  }
+
+  /* Hover effect to pause animation */
+  .scrolling-text:hover {
+    animation-play-state: paused; /* Pauses the animation on hover */
+  }
+</style>
