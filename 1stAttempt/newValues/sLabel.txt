@@ -1,0 +1,31 @@
+let newLabel = (typeof label === 'object' && label?.display?.label) ? label.display.label : (label || '');
+
+
+
+displayColumnLabel(label, columnIndex) {
+  const columns = [this.firstColumn, this.secondColumn, this.thirdColumn];
+  const column = columns[columnIndex];
+  if (column && (column.value || column.value > 0)) {
+    return `${column.value} ${column.symbol || ''}`;
+  }
+
+  let newLabel = typeof label == 'object' ? label.display.label : label;
+
+  // Check if the label is for 'facility_cycle_time' and append 's'
+  if (newLabel === 'facility_cycle_time') {
+    newLabel += 's';
+  }
+
+  return newLabel;
+}
+
+if (newLabel === 'facility_cycle_time') {
+  newLabel = `${newLabel}s`;
+}
+
+if (newLabel === 'facility_cycle_time') {
+  newLabel = newLabel + 's';
+}
+
+newLabel = newLabel === 'facility_cycle_time' ? `${newLabel}s` : newLabel;
+
