@@ -1,0 +1,120 @@
+// 1 return 2 records
+
+@api_bp.route('/replenishment-notices', methods=['GET'])
+def get_replenishment_notices():
+    """Fetch the two oldest replenishment notices and return filtered fields."""
+    # Query the two oldest replenishment notices ordered by setup_date_time
+    notices = ReplenishmentNotice.query.order_by(ReplenishmentNotice.setup_date_time.asc()).limit(2).all()
+
+    # Serialize the full data using the schema (without any explicit nested filtering)
+    full_data = ReplenishmentNoticeSchema(many=True).dump(notices)
+
+    # Manually filter out only the desired fields (process_name and error_code)
+    filtered_data = [
+        {
+            "process_name": item["process"]["process_name"],  # Process name from nested OperationInformation
+            "error_code": item["abnormality"]["error_code"] if item["abnormality"] else None,  # Error code from nested Abnormalities
+        }
+        for item in full_data
+    ]s
+
+    # Return the filtered data as JSON
+    return jsonify(filtered_data)
+
+
+
+/// 2
+
+@api_bp.route('/replenishment-notices', methods=['GET'])
+def get_replenishment_notices():
+    """Fetch the first two replenishment notices and return filtered fields."""
+    # Query the first two replenishment notices
+    notices = ReplenishmentNotice.query.limit(2).all()
+
+    # Serialize full data using the schema
+    full_data = ReplenishmentNoticeSchema(many=True).dump(notices)
+
+    # Filter out only the desired fields
+    filtered_data = [
+        {
+            "process_name": item["process"]["process_name"],
+            "error_code": item["abnormality"]["error_code"] if item["abnormality"] else None,
+        }
+        for item in full_data
+    ]
+
+    # Return the filtered data as JSON
+    return jsonify(filtered_data)
+
+
+/// 1-Oldest return by oldest
+
+@api_bp.route('/replenishment-notices', methods=['GET'])
+def get_replenishment_notices():
+    """Fetch the two oldest replenishment notices and return filtered fields."""
+    # Query the two oldest replenishment notices ordered by setup_date_time
+    notices = ReplenishmentNotice.query.order_by(ReplenishmentNotice.setup_date_time.asc()).limit(2).all()
+
+    # Serialize full data using the schema
+    full_data = ReplenishmentNoticeSchema(many=True).dump(notices)
+
+    # Filter out only the desired fields
+    filtered_data = [
+        {
+            "process_name": item["process"]["process_name"],
+            "error_code": item["abnormality"]["error_code"] if item["abnormality"] else None,
+        }
+        for item in full_data
+    ]
+
+    # Return the filtered data as JSON
+    return jsonify(filtered_data)
+
+
+// notices = ReplenishmentNotice.query.filter_by(process_id=some_process_id).order_by(ReplenishmentNotice.setup_date_time.asc()).limit(2).all()
+
+
+
+###### 1
+
+def test_get_two_oldest_replenishment_notices(client, mock_replenishment_notices):
+    """Test fetching the two oldest replenishment notices ordered by setup_date_time."""
+    response = client.get('/replenishment-notices')
+
+    # Assert the status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Parse the response JSON
+    data = response.get_json()
+
+    # Assert the response contains two items, the two oldest notices
+    assert len(data) == 2
+
+    # Assert that the data is ordered correctly (oldest first)
+    assert data[0]['process_name'] == 'Process 1'
+    assert data[1]['process_name'] == 'Process 2'
+
+    # Assert the filtered fields are correct
+    assert data[0]['error_code'] == 'E001'
+    assert data[1]['error_code'] == 'E002'
+
+    # Ensure that the third (newest) notice is not included in the response
+    assert 'process_name' not in data[2]  # The third notice shouldn't be in the response
+
+
+def test_no_replenishment_notices(client):
+    """Test fetching notices when no replenishment notices exist."""
+    # Empty the database for this test
+    with client.application.app_context():
+        db.session.query(ReplenishmentNotice).delete()
+        db.session.commit()
+
+    response = client.get('/replenishment-notices')
+
+    # Assert the status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Assert that the response is an empty list since no notices are in the database
+    data = response.get_json()
+    assert data == []
+

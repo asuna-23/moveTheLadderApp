@@ -1,0 +1,286 @@
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(notice, index) in limitedNotices"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span
+                class="truncate-text"
+                :title="`${notice.process_name} - ${notice.error_code}`"
+              >
+                {{ notice.process_name }} - {{ notice.error_code }}
+              </span>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveNotice(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        replenishment_notice: [], // Renamed to replenishment_notice
+      };
+    },
+    computed: {
+      limitedNotices() {
+        return this.replenishment_notice.slice(0, 2); // Limit to the first 2 items
+      },
+    },
+    methods: {
+      resolveNotice(index) {
+        // Remove the resolved notice from the array
+        this.replenishment_notice.splice(index, 1);
+      },
+      async fetchNotices() {
+        try {
+          const response = await this.$axios.get('/api/replenishment-notices');
+          this.replenishment_notice = response.data;
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      },
+    },
+    mounted() {
+      this.fetchNotices(); // Fetch the replenishment notices when the component is mounted
+    },
+  };
+</script>
+
+<style scoped>
+  .error-item.v-list-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    cursor: pointer;
+  }
+</style>
+
+
+/// setInterval for 10seconds
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(notice, index) in limitedNotices"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span
+                class="truncate-text"
+                :title="`${notice.process_name} - ${notice.error_code}`"
+              >
+                {{ notice.process_name }} - {{ notice.error_code }}
+              </span>
+            </v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      replenishment_notice: [], // The list of notices
+      lastFetched: null, // Track when data was last fetched
+    };
+  },
+  computed: {
+    limitedNotices() {
+      return this.replenishment_notice.slice(0, 2); // Limit to the first 2 items
+    },
+  },
+  methods: {
+    async fetchNotices() {
+      try {
+        const response = await this.$axios.get('/api/replenishment-notices');
+        // If the data has changed since the last fetch, update the list
+        if (JSON.stringify(this.replenishment_notice) !== JSON.stringify(response.data)) {
+          this.replenishment_notice = response.data; // Update the list
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    },
+  },
+  mounted() {
+    this.fetchNotices(); // Fetch notices when the component is mounted
+
+    // Polling mechanism every 10 seconds to check for new or deleted data
+    setInterval(() => {
+      this.fetchNotices();
+    }, 10000); // Poll every 10 seconds
+  },
+};
+</script>
+
+<style scoped>
+.error-item.v-list-item {
+  background-color: yellow;
+  color: red;
+  padding: 10px;
+  border-radius: 15px;
+  margin-bottom: 8px;
+  border: 2px solid red;
+  overflow: hidden;
+}
+
+.truncate-text-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.truncate-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: inline-block;
+  cursor: pointer;
+}
+</style>
+
+
+
+
+###############3 automatically deletes a reple_notice
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col cols="12">
+        <v-list dense>
+          <v-list-item
+            v-for="(notice, index) in limitedNotices"
+            :key="index"
+            class="error-item"
+          >
+            <v-list-item-title class="truncate-text-wrapper">
+              <span
+                class="truncate-text"
+                :title="`${notice.process_name} - ${notice.error_code}`"
+              >
+                {{ notice.process_name }} - {{ notice.error_code }}
+              </span>
+            </v-list-item-title>
+            <v-list-item-action>
+              <v-btn color="green" @click="resolveNotice(index)">
+                Resolve
+              </v-btn>
+            </v-list-item-action>
+          </v-list-item>
+        </v-list>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+  export default {
+    data() {
+      return {
+        replenishment_notice: [], // The list of notices
+      };
+    },
+    computed: {
+      limitedNotices() {
+        return this.replenishment_notice.slice(0, 2); // Limit to the first 2 items
+      },
+    },
+    methods: {
+      async fetchNotices() {
+        try {
+          const response = await this.$axios.get('/api/replenishment-notices');
+          this.replenishment_notice = response.data; // Update the list
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      },
+
+      resolveNotice(index) {
+        // Remove the resolved notice from the array and call API to delete it
+        const resolvedNotice = this.replenishment_notice.splice(index, 1)[0];
+
+        // Make an API call to delete the resolved notice from the backend
+        this.$axios.delete(`/api/replenishment-notices/${resolvedNotice.id}`)
+          .then(() => {
+            this.fetchNotices(); // Re-fetch notices after deletion
+          })
+          .catch(error => {
+            console.error('Error deleting the notice:', error);
+          });
+      },
+    },
+    mounted() {
+      this.fetchNotices(); // Fetch notices when the component is mounted
+      setInterval(this.fetchNotices, 5000); // Poll every 5 seconds to check for new data
+    },
+  };
+</script>
+
+<style scoped>
+  .error-item.v-list-item {
+    background-color: yellow;
+    color: red;
+    padding: 10px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+    border: 2px solid red;
+    overflow: hidden;
+  }
+
+  .truncate-text-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .truncate-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    display: inline-block;
+    cursor: pointer;
+  }
+</style>
+

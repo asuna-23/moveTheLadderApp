@@ -1,0 +1,121 @@
+/// notice test case
+
+import { shallowMount } from '@vue/test-utils';
+import YourComponent from '@/components/YourComponent.vue';
+import axios from 'axios';
+
+jest.mock('axios');
+jest.useFakeTimers();
+
+describe('YourComponent.vue', () => {
+  // Test case 1: Test if `limitedNotices` computes the first 2 notices correctly
+  it('computes the first 2 notices from the list', () => {
+    const wrapper = shallowMount(YourComponent, {
+      data() {
+        return {
+          replenishment_notice: [
+            { process_name: 'Process1', error_code: 'E001' },
+            { process_name: 'Process2', error_code: 'E002' },
+            { process_name: 'Process3', error_code: 'E003' },
+          ],
+        };
+      },
+    });
+
+    expect(wrapper.vm.limitedNotices).toEqual([
+      { process_name: 'Process1', error_code: 'E001' },
+      { process_name: 'Process2', error_code: 'E002' },
+    ]);
+  });
+
+  // Test case 2: Test if `fetchNotices` updates `replenishment_notice` with new data
+  it('updates replenishment_notice with new data from API', async () => {
+    const mockData = [
+      { process_name: 'Process1', error_code: 'E001' },
+      { process_name: 'Process2', error_code: 'E002' },
+    ];
+
+    axios.get.mockResolvedValue({ data: mockData });
+
+    const wrapper = shallowMount(YourComponent);
+    
+    // Simulate the mounted lifecycle hook that calls fetchNotices
+    await wrapper.vm.fetchNotices();
+
+    expect(wrapper.vm.replenishment_notice).toEqual(mockData);
+  });
+
+  // Test case 3: Test if `fetchNotices` handles API errors gracefully
+  it('handles errors when fetching notices', async () => {
+    axios.get.mockRejectedValue(new Error('Network Error'));
+
+    const wrapper = shallowMount(YourComponent);
+
+    // Call the method and wait for the error handling
+    await wrapper.vm.fetchNotices();
+
+    // You can assert that the error was caught (you might need to spy on console.error)
+    expect(console.error).toHaveBeenCalledWith('Error fetching data:', expect.any(Error));
+  });
+
+  // Test case 4: Test that the `setInterval` polling mechanism works
+  it('polls the API every 10 seconds', async () => {
+    const mockData = [
+      { process_name: 'Process1', error_code: 'E001' },
+      { process_name: 'Process2', error_code: 'E002' },
+    ];
+
+    axios.get.mockResolvedValue({ data: mockData });
+
+    const wrapper = shallowMount(YourComponent);
+    
+    // Fast forward time to trigger the polling
+    jest.advanceTimersByTime(10000);
+
+    // Assert fetchNotices was called again after 10 seconds
+    expect(axios.get).toHaveBeenCalledTimes(2); // First call on mounted, second after 10 seconds
+  });
+
+  // Test case 5: Test if the component correctly renders the list of notices
+  it('renders a list of notices correctly', async () => {
+    const mockData = [
+      { process_name: 'Process1', error_code: 'E001' },
+      { process_name: 'Process2', error_code: 'E002' },
+    ];
+
+    const wrapper = shallowMount(YourComponent, {
+      data() {
+        return { replenishment_notice: mockData };
+      },
+    });
+
+    const listItems = wrapper.findAll('.error-item');
+    expect(listItems.length).toBe(mockData.length);
+    expect(listItems.at(0).text()).toContain('Process1 - E001');
+    expect(listItems.at(1).text()).toContain('Process2 - E002');
+  });
+
+  // Test case 6: Test if the `truncate-text` class works as expected
+  it('applies truncate-text class to notices correctly', () => {
+    const mockData = [
+      { process_name: 'Process1', error_code: 'E001' },
+      { process_name: 'Process2', error_code: 'E002' },
+    ];
+
+    const wrapper = shallowMount(YourComponent, {
+      data() {
+        return { replenishment_notice: mockData };
+      },
+    });
+
+    const truncateText = wrapper.findAll('.truncate-text');
+    expect(truncateText.length).toBe(mockData.length);
+    expect(truncateText.at(0).attributes('title')).toBe('Process1 - E001');
+    expect(truncateText.at(1).attributes('title')).toBe('Process2 - E002');
+  });
+});
+
+
+
+### notice test case
+

@@ -1,0 +1,122 @@
+@operation_information_router.route("/api/get-coordinates", methods=["GET"])
+def get_coordinates():
+    """Fetch specific fields for the coordinates"""
+    operation = OperationInformationDb
+    process = (
+        operation.query.filter(operation.process_id <= 14)
+        .order_by(operation.process_id)
+        .all()
+    )
+
+    # Specify only the fields you want to include in the response
+    operation_data = operation_information_schema.dump(
+        process, 
+        only=("process_id", "coordinates.x_position", "coordinates.y_position")
+    )
+
+    return {
+        "success": True,
+        "message_response": "COORDINATES FETCHED SUCCESSFULLY",
+        "message_content": "COORDINATES fetched successfully",
+        "data": operation_data,
+    }, 200
+
+
+////
+
+
+@operation_information_router.route("/api/get-coordinates", methods=["GET"])
+def get_coordinates():
+    """Fetch specific fields for the coordinates"""
+    operation = OperationInformationDb
+    process = (
+        operation.query.filter(operation.process_id <= 14)
+        .order_by(operation.process_id)
+        .all()
+    )
+
+    # Serialize full data
+    full_data = operation_information_schema.dump(process)
+
+    # Filter out only the desired fields
+    filtered_data = [
+        {
+            "process_id": item["process_id"],
+            "x": item["coordinates"]["x_position"],
+            "y": item["coordinates"]["y_position"],
+        }
+        for item in full_data
+    ]
+
+    return {
+        "success": True,
+        "message_response": "COORDINATES FETCHED SUCCESSFULLY",
+        "message_content": "COORDINATES fetched successfully",
+        "data": filtered_data,
+    }, 200
+
+
+
+/////////////////////////////////
+
+@api_bp.route('/replenishment-notices', methods=['GET'])
+def get_replenishment_notices():
+    """Fetch all replenishment notices and filter desired fields."""
+    # Fetch all replenishment notices
+    notices = ReplenishmentNotice.query.all()
+
+    # Serialize full data using the schema
+    full_data = ReplenishmentNoticeSchema(many=True).dump(notices)
+
+    # Filter out only the desired fields
+    filtered_data = [
+        {
+            "process_name": item["process"]["process_name"],
+            "error_code": item["abnormality"]["error_code"] if item["abnormality"] else None,
+        }
+        for item in full_data
+    ]
+
+    # Return the filtered data as JSON
+    return jsonify(filtered_data)
+
+
+## pytest
+
+def test_get_replenishment_notices(client, mock_replenishment_notices):
+    """Test the /replenishment-notices route."""
+    response = client.get('/replenishment-notices')
+    
+    # Assert the status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Parse the response JSON
+    data = response.get_json()
+
+    # Assert the correct data is returned in the expected format
+    assert len(data) == 3  # We added 3 mock notices
+
+    # Assert that the filtered fields are correct
+    assert data[0]['process_name'] == 'Process 1'
+    assert data[0]['error_code'] == 'E001'
+    assert data[1]['process_name'] == 'Process 2'
+    assert data[1]['error_code'] == 'E002'
+    assert data[2]['process_name'] == 'Process 3'
+    assert data[2]['error_code'] is None  # Since no abnormality is provided
+
+    # Assert the response is in the correct JSON format
+    assert isinstance(data, list)
+    assert isinstance(data[0], dict)
+    assert "process_name" in data[0]
+    assert "error_code" in data[0]
+
+
+def test_empty_replenishment_notices(client):
+    """Test the /replenishment-notices route when no notices exist."""
+    # Ensure the database is empty for this test
+    response = client.get('/replenishment-notices')
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data == []  # Empty response expected if no notices exist
+

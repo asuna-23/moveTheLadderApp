@@ -1,0 +1,39 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from marshmallow import Schema, fields
+from datetime import datetime
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///example.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# Models
+class OperationInformation(db.Model):
+    __tablename__ = 'operation_information_tbl'
+    process_id = db.Column(db.Integer, primary_key=True)
+    process_name = db.Column(db.String, nullable=False)
+    coordinates_id = db.Column(db.Integer, db.ForeignKey('coordinates_tbl.coordinates_id'), nullable=True)
+    coordinates = db.relationship('Coordinates', back_populates='operations')
+
+class Coordinates(db.Model):
+    __tablename__ = 'coordinates_tbl'
+    coordinates_id = db.Column(db.Integer, primary_key=True)
+    x_position = db.Column(db.Integer, nullable=False)
+    y_position = db.Column(db.Integer, nullable=False)
+    operations = db.relationship('OperationInformation', back_populates='coordinates')
+
+class Abnormalities(db.Model):
+    __tablename__ = 'abnormalities_tbl'
+    abnormalities_id = db.Column(db.Integer, primary_key=True)
+    error_code = db.Column(db.String, nullable=False)
+    error_message = db.Column(db.String, nullable=False)
+
+class ReplenishmentNotice(db.Model):
+    __tablename__ = 'replenishment_notice_tbl'
+    replenishment_id = db.Column(db.Integer, primary_key=True)
+    setup_date_time = db.Column(db.DateTime, default=datetime.utcnow)
+    process_id = db.Column(db.Integer, db.ForeignKey('operation_information_tbl.process_id'), nullable=False)
+    abnormalities_id = db.Column(db.Integer, db.ForeignKey('abnormalities_tbl.abnormalities_id'), nullable=True)
+    process = db.relationship('OperationInformation', backref='replenishment_notices')
+    abnormality = db.relationship('Abnormalities', backref='replenishment_notices')
