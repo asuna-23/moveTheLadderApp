@@ -1,0 +1,150 @@
+<template>
+  <v-container>
+    <v-row justify="center">
+      <v-col 
+        v-for="(number, index) in numberRange" 
+        :key="index" 
+        cols="auto" 
+        class="text-center"
+      >
+        <!-- Canvas for each number -->
+        <canvas 
+          ref="canvasRefs" 
+          :width="canvasSize" 
+          :height="canvasSize"
+          class="canvas-style"
+        ></canvas>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      numberRange: Array.from({ length: 15 }, (_, i) => i + 1), // Range of numbers (1 to 5)
+      canvasSize: 100, // Canvas size (width and height)
+    };
+  },
+  mounted() {
+    // Draw each number with its circular border
+    this.numberRange.forEach((number, index) => {
+      this.drawCircleWithNumber(index, number);
+    });
+  },
+  methods: {
+    drawCircleWithNumber(index, number) {
+      // Get the specific canvas element by index
+      const canvas = this.$refs.canvasRefs[index];
+      const ctx = canvas.getContext("2d");
+
+      // Canvas dimensions
+      const centerX = canvas.width / 2; // Center X coordinate
+      const centerY = canvas.height / 2; // Center Y coordinate
+      const radius = canvas.width / 3; // Circle radius
+
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = "#007bff"; // Circle border color
+      ctx.lineWidth = 5; // Circle border thickness
+      ctx.stroke();
+
+      // Draw the number
+      ctx.font = `${radius}px Arial`; // Font size proportional to radius
+      ctx.textAlign = "center"; // Center horizontally
+      ctx.textBaseline = "middle"; // Center vertically
+      ctx.fillStyle = "#000"; // Number color
+      ctx.fillText(number, centerX, centerY); // Draw number at center
+    },
+  },
+};
+</script>
+
+<style>
+.canvas-style {
+  display: block;
+  margin: 0 auto;
+}
+</style>
+
+
+//
+
+<template>
+  <v-container>
+    <v-row>
+      <v-col 
+        v-for="(number, index) in numberRange" 
+        :key="index" 
+        cols="auto" 
+        class="text-center"
+      >
+        <!-- Each canvas for the number -->
+        <canvas 
+          ref="canvasRefs" 
+          :width="canvasSize" 
+          :height="canvasSize"
+          class="canvas-style"
+        ></canvas>
+      </v-col>
+    </v-row>
+  </v-container>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      numberRange: Array.from({ length: 5 }, (_, i) => i + 1), // Range of numbers (1 to 5)
+      canvasSize: 100, // Canvas size for each circle
+    };
+  },
+  mounted() {
+    // Draw each number with its circular border
+    this.numberRange.forEach((number, index) => {
+      this.drawCircleWithNumber(index, number);
+    });
+  },
+  methods: {
+    drawCircleWithNumber(index, number) {
+      // Get the specific canvas element by index
+      const canvas = this.$refs.canvasRefs[index];
+      const ctx = canvas.getContext("2d");
+
+      // Canvas dimensions and properties
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = canvas.width / 3;
+
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+      ctx.strokeStyle = "#007bff"; // Circle border color
+      ctx.lineWidth = 5; // Circle border thickness
+      ctx.stroke();
+
+      // Draw the number
+      ctx.font = `${radius}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000"; // Number color
+      ctx.fillText(number, centerX, centerY);
+    },
+  },
+};
+</script>
+
+<style>
+.canvas-style {
+  display: block;
+  margin: 0 auto;
+}
+</style>
