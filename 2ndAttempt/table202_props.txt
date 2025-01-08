@@ -1,0 +1,219 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+        >
+          <common-label :item="column"></common-label>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in itemTable.TABLE_COLUMN" :key="rowIndex">
+        <td
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="itemTable.TR_DIRECTIVES"
+        >
+          <common-label
+            :item="row[columnIndex]"
+          ></common-label>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+import CommonLabel from './CommonLabel.vue';
+
+export default {
+  name: 'CommonTable',
+  components: { CommonLabel },
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table th {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #2e2e2e;
+  color: #ffffff;
+}
+
+.custom-table td {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #3a3a3a;
+  color: #ffffff;
+}
+</style>
+
+
+///
+
+<template>
+  <v-table class="custom-table">
+    <!-- Render Table Headers -->
+    <thead>
+      <tr v-bind="itemTable.TH_DIRECTIVES">
+        <th
+          v-for="(header, headerIndex) in itemTable.TABLE_HEADER"
+          :key="headerIndex"
+          v-bind="header.directives"
+        >
+          <component
+            :is="header.COMPONENT_NAME"
+            :item="header.display"
+          ></component>
+        </th>
+      </tr>
+    </thead>
+
+    <!-- Render Table Rows -->
+    <tbody>
+      <!-- If data is provided, render it; otherwise, use default labels -->
+      <tr
+        v-for="(row, rowIndex) in (dataProps.length > 0 ? dataProps : itemTable.TABLE_COLUMN)"
+        :key="rowIndex"
+        v-bind="itemTable.TR_DIRECTIVES"
+      >
+        <td v-for="(cell, cellIndex) in itemTable.TABLE_HEADER" :key="cellIndex">
+          <component
+            :is="row[cellIndex]?.COMPONENT_NAME || cell.COMPONENT_NAME"
+            :item="row[cellIndex]?.display || cell.display"
+          ></component>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  name: 'CommonTable',
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    dataProps: {
+      type: Array,
+      default: () => [],
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table th,
+.custom-table td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.custom-table th {
+  background-color: #333;
+  color: white;
+  font-weight: bold;
+}
+</style>
+
+
+
+///////////////
+
+<template>
+  <v-table class="custom-table">
+    <!-- Render Table Headers -->
+    <thead>
+      <tr v-bind="itemTable.TH_DIRECTIVES">
+        <th
+          v-for="(header, headerIndex) in itemTable.TABLE_HEADER"
+          :key="headerIndex"
+          v-bind="header.directives"
+        >
+          <component
+            :is="header.COMPONENT_NAME"
+            :item="header.display"
+          ></component>
+        </th>
+      </tr>
+    </thead>
+
+    <!-- Render Table Rows -->
+    <tbody>
+      <tr
+        v-for="(row, rowIndex) in normalizedData"
+        :key="rowIndex"
+        v-bind="itemTable.TR_DIRECTIVES"
+      >
+        <td v-for="(header, cellIndex) in itemTable.TABLE_HEADER" :key="cellIndex">
+          <component
+            :is="row[cellIndex]?.COMPONENT_NAME || itemTable.TABLE_COLUMN[cellIndex]?.COMPONENT_NAME"
+            :item="row[cellIndex]?.display || itemTable.TABLE_COLUMN[cellIndex]?.display"
+          ></component>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  name: 'CommonTable',
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+    dataProps: {
+      type: Array,
+      default: () => [],
+    },
+  },
+  computed: {
+    normalizedData() {
+      // If dataProps is empty, return TABLE_COLUMN as fallback
+      if (!this.dataProps.length) {
+        return this.itemTable.TABLE_COLUMN.map((column) => [column]);
+      }
+
+      // Normalize rows to match the number of headers in TABLE_HEADER
+      return this.dataProps.map((row) => {
+        return this.itemTable.TABLE_HEADER.map((_, index) => {
+          const cell = row[index] || {}; // Fallback to empty cell if no data is available
+          return {
+            COMPONENT_NAME: cell.COMPONENT_NAME || this.itemTable.TABLE_COLUMN[index]?.COMPONENT_NAME || 'CommonLabel',
+            display: cell.display || this.itemTable.TABLE_COLUMN[index]?.display || { label: '-' },
+          };
+        });
+      });
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table th,
+.custom-table td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.custom-table th {
+  background-color: #333;
+  color: white;
+  font-weight: bold;
+}
+</style>
+

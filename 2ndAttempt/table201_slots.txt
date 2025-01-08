@@ -1,0 +1,130 @@
+<template>
+  <v-table class="custom-table">
+    <thead>
+      <tr>
+        <th
+          v-show="itemTable.TABLE_HEADER.length > 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_HEADER"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-header"
+        >
+          <!-- Use a slot to allow the parent to render the content -->
+          <slot name="header" :column="column" :index="columnIndex">
+            <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+          </slot>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          v-show="itemTable.TABLE_COLUMN.length > 0"
+          v-for="(column, columnIndex) in itemTable.TABLE_COLUMN"
+          :key="columnIndex"
+          v-bind="column.directives"
+          id="custom-row"
+        >
+          <!-- Use a slot to allow the parent to render the content -->
+          <slot name="column" :column="column" :index="columnIndex">
+            <common-label :item="column"></common-label>
+          </slot>
+        </td>
+      </tr>
+    </tbody>
+  </v-table>
+</template>
+
+<script>
+export default {
+  name: "CommonTable",
+  props: {
+    itemTable: {
+      type: Object,
+      required: true,
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table th {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #2e2e2e;
+  color: #ffffff;
+  width: 30rem;
+}
+
+.custom-table td {
+  border: 1px solid rgb(204, 204, 204);
+  background-color: #3a3a3a;
+  color: #ffffff;
+}
+
+#custom-header {
+  border-color: rgb(204, 204, 204);
+  height: 2.6rem;
+  text-align: center;
+  font-weight: bolder;
+}
+
+#custom-row {
+  border-color: rgb(204, 204, 204);
+  height: 2.5rem;
+  text-align: center;
+  font-weight: bolder;
+}
+</style>
+
+
+//// parent
+
+<template>
+  <div>
+    <!-- Example: Using OPERATION_INFORMATION_TABLE -->
+    <common-table :itemTable="OPERATION_INFORMATION_TABLE">
+      <!-- Slot for headers -->
+      <template #header="{ column, index }">
+        <div class="custom-header-content">
+          {{ column.display.label }}
+        </div>
+      </template>
+
+      <!-- Slot for columns -->
+      <template #column="{ column, index }">
+        <div class="custom-column-content">
+          {{ column.display.label }}
+        </div>
+      </template>
+    </common-table>
+
+    <!-- Example: Using PROUDUCT_LINE_TABLE -->
+    <common-table :itemTable="PROUDUCT_LINE_TABLE">
+      <!-- Slot for headers -->
+      <template #header="{ column, index }">
+        <common-label :item="column" class="text-h5 font-weight-bold"></common-label>
+      </template>
+
+      <!-- Slot for columns -->
+      <template #column="{ column, index }">
+        <common-label :item="column"></common-label>
+      </template>
+    </common-table>
+  </div>
+</template>
+
+<script>
+import CommonTable from "./CommonTable.vue";
+import { OPERATION_INFORMATION_TABLE, PROUDUCT_LINE_TABLE } from "./rTables";
+
+export default {
+  name: "ParentComponent",
+  components: { CommonTable },
+  data() {
+    return {
+      OPERATION_INFORMATION_TABLE,
+      PROUDUCT_LINE_TABLE,
+    };
+  },
+};
+</script>
