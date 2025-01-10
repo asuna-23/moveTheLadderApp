@@ -1,0 +1,101 @@
+<template>
+  <div>
+    <table :class="tableRecipe.TH_DIRECTIVES.class">
+      <thead>
+        <tr>
+          <th
+            v-for="(header, index) in tableRecipe.TABLE_HEADER"
+            :key="index"
+            v-bind="header.directives?.style"
+          >
+            <component :is="header.componentName" v-bind="header.display"></component>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(row, rowIndex) in tableData" :key="rowIndex">
+          <td
+            v-for="(column, colIndex) in tableRecipe.TABLE_COLUMN"
+            :key="colIndex"
+            v-bind="column.directives?.style"
+          >
+            <!-- Render data if available, else fallback to column default label -->
+            <component
+              :is="column.componentName"
+              :label="getColumnValue(row, colIndex, column.display.label)"
+            ></component>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script>
+import {
+  OPERATION_INFORMATION_TABLE,
+  PROUDUCT_LINE_TABLE,
+  OPERATION_TABLE_PROPERTIES,
+} from './rTables';
+
+export default {
+  props: {
+    // Props to receive data for table rows
+    tableData: {
+      type: Array,
+      default: () => [],
+    },
+    // Props to dynamically choose the table recipe
+    tableType: {
+      type: String,
+      default: 'OPERATION_INFORMATION_TABLE', // Default table type
+    },
+  },
+  data() {
+    return {
+      tableRecipes: {
+        OPERATION_INFORMATION_TABLE,
+        PROUDUCT_LINE_TABLE,
+        OPERATION_TABLE_PROPERTIES,
+      },
+    };
+  },
+  computed: {
+    // Get the current table recipe based on the tableType prop
+    tableRecipe() {
+      return this.tableRecipes[this.tableType];
+    },
+  },
+  methods: {
+    // Method to get the column value based on the received data
+    getColumnValue(row, colIndex, defaultLabel) {
+      if (typeof row === 'string' || typeof row === 'number') {
+        // If row is a primitive value, return it
+        return row;
+      } else if (Array.isArray(row)) {
+        // If row is an array, return the value at the corresponding index
+        return row[colIndex] || defaultLabel;
+      } else if (typeof row === 'object' && row !== null) {
+        // If row is an object, return the value matching the column index key
+        const keys = Object.keys(row);
+        return row[keys[colIndex]] || defaultLabel;
+      }
+      // Fallback to default label
+      return defaultLabel;
+    },
+  },
+};
+</script>
+
+<style scoped>
+.custom-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.custom-table th,
+.custom-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+</style>
