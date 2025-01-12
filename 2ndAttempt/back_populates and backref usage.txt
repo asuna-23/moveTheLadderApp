@@ -1,0 +1,53 @@
+back_populates and backref are used to establish bidirectional relationships between two models. 
+
+back_populates is best used when:
+
+- when you want to explicitly define relationships on both sides, providing more clarity and control over how the relationship is managed.
+
+- If each side of the relationship requires different configurations (e.g., lazy loading strategies, cascade rules, etc.), back_populates is better because it allows independent customization for each relationship.
+
+- Using back_populates makes it very clear where the relationship is defined in each model, which can improve code readability in larger projects.
+
+
+backref is best used when:
+
+- You Want to Avoid Redundant Code:
+    -> backref automatically creates the reverse relationship in one step, reducing boilerplate code.
+
+- If your relationship is straightforward and does not require separate configurations on both sides, backref provides a convenient shorthand.
+
+- backref does not allow independent customization for each side of the relationship. Use it when both sides can share the same configurations.
+
+
+-----------------
+
+back_populates: Explicitly defines the relationship on both sides.
+
+backref: Automatically creates the reverse relationship.
+
+
+
+back_populates: Allows independent configuration of each side.
+
+backref: Configurations are shared between both sides.
+
+
+back_populates: Requires more code but offers greater clarity.
+
+backref: Easier to use for simple relationships.
+
+
+back_populates: Complex relationships or when explicit control is required.
+
+backref: Simple relationships or when reducing boilerplate.
+
+
+
+----------------------
+
+Practical Scenarios
+- Complex Relationships: Use back_populates for complex cases, like many-to-many relationships with secondary tables or when using advanced options like cascade.
+
+- Quick Prototyping: Use backref when quickly defining simple bidirectional relationships in small or prototype projects.
+
+- Team Collaboration: In large teams, prefer back_populates for clarity, as it explicitly documents relationships on both ends, reducing confusion.
