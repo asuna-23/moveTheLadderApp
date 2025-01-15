@@ -1,0 +1,36 @@
+// OT
+computed: {
+  formattedTableData() {
+    return this.tableData.map(row => {
+      const newRow = { ...row };
+      if (!isNaN(parseFloat(row.facility_cycle_time))) {
+        newRow.facility_cycle_time = `${parseFloat(row.facility_cycle_time).toFixed(2)}s`;
+      }
+      return newRow;
+    });
+  },
+},
+
+
+methods: {
+  getColumnValue(row, column) {
+    return row[column.display.label] || ''; // Simple display logic
+  },
+},
+
+methods: {
+  getCellColor(value, label) {
+    if (label === 'facility_cycle_time' && parseFloat(value) > 2.0) {
+      return 'bg-red'; // Add red background if greater than 2.0
+    }
+    return '';
+  },
+},
+
+<td
+  v-for="(column, colIndex) in tableColumns"
+  :key="colIndex"
+  :class="getCellColor(row[column.display.label], column.display.label)"
+>
+  {{ getColumnValue(row, column) }}
+</td>
