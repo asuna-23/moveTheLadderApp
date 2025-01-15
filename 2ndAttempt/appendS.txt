@@ -34,3 +34,93 @@ methods: {
 >
   {{ getColumnValue(row, column) }}
 </td>
+
+
+//////
+
+<template>
+  <table>
+    <thead>
+      <tr>
+        <th v-for="(column, colIndex) in tableColumns" :key="colIndex">
+          {{ column.display.label }}
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(row, rowIndex) in tableData" :key="rowIndex">
+        <td
+          v-for="(column, colIndex) in tableColumns"
+          :key="colIndex"
+          :class="getCellColor(row[column.display.label], column.display.label)"
+        >
+          <!-- Render custom slot if provided -->
+          <slot 
+            :name="column.display.label" 
+            :row="row" 
+            :value="row[column.display.label]"
+          >
+            <!-- Default rendering -->
+            {{ row[column.display.label] }}
+          </slot>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</template>
+
+<script>
+export default {
+  props: {
+    tableData: {
+      type: Array,
+      required: true,
+    },
+    tableColumns: {
+      type: Array,
+      required: true,
+    },
+  },
+  methods: {
+    getCellColor(value, label) {
+      if (label === "facility_cycle_time" && parseFloat(value) > 2.0) {
+        return "bg-red"; // Apply red background if greater than 2.0
+      }
+      return "";
+    },
+  },
+};
+</script>
+
+//
+
+<template>
+  <CommonTable
+    :tableData="tableData"
+    :tableColumns="tableRecipe.TABLE_COLUMN"
+  >
+    <!-- Custom rendering for 'facility_cycle_time' -->
+    <template #facility_cycle_time="{ value }">
+      {{ parseFloat(value).toFixed(2) }}s
+    </template>
+  </CommonTable>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      tableData: [
+        { facility_cycle_time: "2.5", other_column: "Example 1" },
+        { facility_cycle_time: "1.8", other_column: "Example 2" },
+      ],
+      tableRecipe: {
+        TABLE_COLUMN: [
+          { display: { label: "facility_cycle_time" } },
+          { display: { label: "other_column" } },
+        ],
+      },
+    };
+  },
+};
+</script>
