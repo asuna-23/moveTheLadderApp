@@ -1,0 +1,338 @@
+// simple log in
+
+<template>
+  <v-container class="d-flex justify-center align-center" style="height: 100vh;">
+    <v-card elevation="2" class="pa-6" width="400px">
+      <v-card-title class="text-h5">Log In</v-card-title>
+      <v-card-text>
+        <v-form ref="loginForm" v-model="isValid" lazy-validation>
+          <v-text-field
+            label="Username"
+            v-model="username"
+            :rules="[rules.required]"
+            outlined
+            dense
+            clearable
+          ></v-text-field>
+          <v-text-field
+            label="Password"
+            v-model="password"
+            :rules="[rules.required]"
+            type="password"
+            outlined
+            dense
+            clearable
+          ></v-text-field>
+        </v-form>
+      </v-card-text>
+      <v-card-actions class="d-flex justify-space-between">
+        <v-btn color="primary" @click="submitLogin" :disabled="!isValid">
+          Log In
+        </v-btn>
+        <v-btn text color="secondary" @click="resetForm">
+          Reset
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-container>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      username: '',
+      password: '',
+      isValid: false,
+      rules: {
+        required: (value) => !!value || 'This field is required',
+      },
+    };
+  },
+  methods: {
+    submitLogin() {
+      if (this.isValid) {
+        // Handle login logic here
+        console.log('Username:', this.username);
+        console.log('Password:', this.password);
+        alert('Login successful!');
+      }
+    },
+    resetForm() {
+      this.username = '';
+      this.password = '';
+      this.$refs.loginForm.resetValidation();
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Optional: Add styles if needed */
+</style>
+
+
+//////////////// log in
+
+<template>
+  <v-container class="d-flex justify-center align-center" style="height: 100vh;">
+    <v-card elevation="2" class="pa-6" width="400px">
+      <v-card-title class="text-h5">Log In</v-card-title>
+      <v-card-text>
+        <v-form ref="loginForm" v-model="isValid" lazy-validation>
+          <v-text-field
+            label="Username"
+            v-model="username"
+            :rules="[rules.required]"
+            outlined
+            dense
+            clearable
+          ></v-text-field>
+          <v-text-field
+            label="Password"
+            v-model="password"
+            :rules="[rules.required]"
+            type="password"
+            outlined
+            dense
+            clearable
+          ></v-text-field>
+        </v-form>
+      </v-card-text>
+      <v-card-actions class="d-flex justify-space-between">
+        <v-btn color="primary" @click="submitLogin" :disabled="!isValid">
+          Log In
+        </v-btn>
+        <v-btn text color="secondary" @click="resetForm">
+          Reset
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-container>
+</template>
+
+<script>
+import axios from "axios";
+
+export default {
+  data() {
+    return {
+      username: "",
+      password: "",
+      isValid: false,
+      rules: {
+        required: (value) => !!value || "This field is required",
+      },
+    };
+  },
+  methods: {
+    async submitLogin() {
+      if (this.isValid) {
+        try {
+          const response = await axios.post("http://127.0.0.1:5000/login", {
+            username: this.username,
+            password: this.password,
+          });
+          if (response.data.success) {
+            alert("Login successful!");
+            
+	    this.$router.push("/home");
+          } else {
+            alert("Invalid username or password.");
+          }
+        } catch (error) {
+          console.error("Login error:", error);
+          alert("An error occurred while logging in.");
+        }
+      }
+    },
+    resetForm() {
+      this.username = "";
+      this.password = "";
+      this.$refs.loginForm.resetValidation();
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Optional: Add styles if needed */
+</style>
+
+
+## sample 2 werkzeug.security
+
+-> model
+
+from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
+
+class User(db.Model):
+    __tablename__ = "users_tbl"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+-> api
+
+from flask import Blueprint, request, jsonify
+from app import db
+from app.models import User
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Query the user in the database
+    user = User.query.filter_by(username=username).first()
+
+    if user and user.check_password(password):
+        return jsonify({"success": True, "message": "Login successful"})
+    else:
+        return jsonify({"success": False, "message": "Invalid username or password"}), 401
+
+
+
+## sample 3 bcrypt
+
+pip install bycrpt
+
+-> model
+
+import bcrypt
+from app import db
+
+class User(db.Model):
+    __tablename__ = "users_tbl"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+
+    def set_password(self, password):
+        # Hash the password using bcrypt
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+    def check_password(self, password):
+        # Check if the hashed password matches the stored hash
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+
+
+-> api
+
+from flask import Blueprint, request, jsonify
+from app import db
+from app.models import User
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Query the user in the database
+    user = User.query.filter_by(username=username).first()
+
+    if user and user.check_password(password):
+        return jsonify({"success": True, "message": "Login successful"})
+    else:
+        return jsonify({"success": False, "message": "Invalid username or password"}), 401
+
+
+
+
+## sample 4 hashlib (SHA-256 version)
+
+
+-> model
+
+import hashlib
+import os
+from app import db
+
+class User(db.Model):
+    __tablename__ = "users_tbl"
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    salt = db.Column(db.String(200), nullable=False)  # Store salt as well
+
+    def set_password(self, password):
+        # Generate a salt
+        salt = os.urandom(16).hex()  # Random salt (16 bytes)
+        self.salt = salt
+        # Hash the password using SHA-256 with the salt
+        password_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+        self.password_hash = password_hash
+
+    def check_password(self, password):
+        # Hash the input password with the stored salt and compare with stored hash
+        password_hash = hashlib.sha256((password + self.salt).encode('utf-8')).hexdigest()
+        return password_hash == self.password_hash
+
+
+
+-> api
+
+from flask import Blueprint, request, jsonify
+from app import db
+from app.models import User
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    try:
+        data = request.json
+        username = data.get('username')
+        password = data.get('password')
+
+        # Query the user in the database
+        user = User.query.filter_by(username=username).first()
+
+        if user and user.check_password(password):
+            return jsonify({"success": True, "message": "Login successful"})
+        else:
+            return jsonify({"success": False, "message": "Invalid username or password"}), 401
+
+    except Exception as e:
+        # Handle unexpected errors gracefully
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+
+
+## sample1
+
+# Dummy user data for authentication
+users = {
+    "testuser": "password123",  # username: password
+    "admin": "adminpassword",
+}
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    if username in users and users[username] == password:
+        return jsonify({"success": True, "message": "Login successful"})
+    else:
+        return jsonify({"success": False, "message": "Invalid username or password"}), 401

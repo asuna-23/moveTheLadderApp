@@ -1,0 +1,92 @@
+from app import db
+from app.models import User
+
+# Create a new user
+new_user = User(username="newuser")
+new_user.set_password("securepassword")  # Hashes the password
+db.session.add(new_user)
+db.session.commit()
+
+
+///
+
+from werkzeug.security import generate_password_hash
+print(generate_password_hash("securepassword"))
+
+
+
+
+/////
+
+from your_app import db, User
+
+users = [
+    {"username": "user1", "password": "password1"},
+    {"username": "user2", "password": "password2"},
+]
+
+for user_data in users:
+    user = User(username=user_data["username"])
+    user.set_password(user_data["password"])
+    db.session.add(user)
+
+db.session.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------
+
+- bcrypt is generally the preferred option for password hashing as it is designed specifically to be slow (to resist brute force attacks), includes built-in salting, and is widely used in the security industry.
+
+- hashlib (SHA-256) can be used if you need more control over how the hash is done but requires careful handling of salts and iterations. It's not as specialized for password hashing as bcrypt.
+
+
+
+1. Werkzeug (PBKDF2 with SHA-256)
+Strengths:
+
+Security: PBKDF2 is a proven, secure algorithm, and by default, Werkzeug uses a high iteration count to resist brute-force attacks.
+Ease of Use: Werkzeug provides a simple API with functions like generate_password_hash and check_password_hash, which handle the salting and iteration internally.
+Compatibility: It is often used in Flask applications, as Werkzeug is a core component of Flask's internal implementation.
+Weaknesses:
+
+Flexibility: While secure, PBKDF2 is not as slow (computationally expensive) as bcrypt or argon2, which makes it potentially less resistant to high-performance brute-force attacks compared to these more recent algorithms.
+Speed: Slightly faster than bcrypt, but not as modern as Argon2.
+Best For: Flask-based applications or simple use cases where you need a good password hashing solution with minimal setup and a focus on compatibility.
+
+2. bcrypt
+Strengths:
+
+Security: bcrypt is highly secure, designed specifically for hashing passwords. It includes both salting and a cost factor that makes it slow enough to mitigate brute-force attacks.
+Salted Hash: It automatically handles salt generation, making it easy to use securely.
+Brute-Force Resistant: The cost factor can be adjusted to make the hashing process computationally expensive, further enhancing its security.
+Widely Adopted: bcrypt is widely adopted and recommended by security experts for password hashing.
+Weaknesses:
+
+Speed: bcrypt is intentionally slower than other hashing algorithms to resist brute-force attacks, but this could lead to performance concerns if you need to hash many passwords quickly.
+Not as Flexible as PBKDF2: It doesn’t provide as much control over some aspects of the hashing process compared to PBKDF2 (e.g., iterations).
+Best For: Applications where security is a top priority and you want a well-established, widely trusted password hashing algorithm. Great for high-security environments where you need to protect against brute-force attacks.
+
+3. hashlib (with PBKDF2 or SHA-256)
+Strengths:
+
+Speed: hashlib is a low-level library in Python that is fast and efficient. You can use it to implement custom hashing algorithms like SHA-256, PBKDF2, or even scrypt.
+Flexibility: It gives you full control over how hashing is implemented (e.g., setting your own number of iterations or memory costs with PBKDF2 or scrypt).
+Weaknesses:
+
+Manual Setup: Unlike bcrypt or Werkzeug, you’ll need to manually handle salting, iterations, and other critical components to ensure secure password hashing.
+Less Secure Without Proper Implementation: If you don’t handle the setup correctly (like proper salting or choosing a sufficient number of iterations), it can be less secure.
+Not Password-Centric: hashlib is a general-purpose hashing library, not specifically designed for password hashing. It lacks the protective features like a work factor that bcrypt or Argon2 provide.
+Best For: Developers who want full control over the hashing process and who are comfortable implementing the security features themselves. Suitable if you're integrating custom or lesser-known algorithms.
