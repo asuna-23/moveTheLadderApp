@@ -1,0 +1,213 @@
+pip install flask-socketio eventlet
+
+## app
+
+from flask import Flask
+from flask_socketio import SocketIO
+from src.setup_db_example.database import initialize_database
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize the database
+initialize_database(app)
+
+# Register Blueprints
+from src.setup_db_example.routes.a_operation_information import operation_information_router
+from src.setup_db_example.routes.a_replenishment_notice import replenishment_notice_router
+
+app.register_blueprint(operation_information_router)
+app.register_blueprint(replenishment_notice_router)
+
+if __name__ == "__main__":
+    # Use eventlet for WebSocket support
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
+
+
+## 
+
+from flask_socketio import emit
+
+@operation_information_router.route(
+    "/api/update-units/<int:process_id>", methods=["PUT"]
+)
+def update_units(process_id):
+    """Update the planned_number_units for a specific operation"""
+
+    try:
+        data = request.json.get("params")
+        planned_number_units = data.get("planned_number_units")
+
+        if planned_number_units is None:
+            return {"success": False, "message": "Missing planned_number_units"}, 400
+
+        operation = OperationInformationDb.query.filter_by(
+            process_id=process_id
+        ).first()
+
+        if not operation:
+            return {"success": False, "message": "Operation not found"}, 400
+
+        operation.planned_number_units = planned_number_units
+        db.session.commit()
+
+        # Emit the updated data to WebSocket clients
+        updated_data = {
+            "process_id": process_id,
+            "planned_number_units": planned_number_units,
+        }
+        emit("operation_updated", updated_data, broadcast=True)
+
+        return {
+            "success": True,
+            "message": "PLANNED_NUMBER_UNITS UPDATED SUCCESSFULLY",
+            "updated_value": planned_number_units,
+        }, 200
+
+    except Exception as e:
+        return {"success": False, "message": f"Error updating units: {str(e)}"}, 500
+
+
+
+////////////////
+## api_operation_information.py
+
+from src.setup_db_example.models.m_operation_information import OperationInformationDb
+from src.setup_db_example.schemas.s_operation_information import (
+    OperationInformationSchema,
+)
+from src.setup_db_example.database import db
+from flask import Blueprint, request, jsonify
+from flask_socketio import SocketIO, emit
+
+operation_information_router = Blueprint("a_operation_", __name__)
+operation_information_schema = OperationInformationSchema
+
+# Create and initialize SocketIO
+socketio = SocketIO()
+
+# Initialize the app with SocketIO in your main application file.
+# Example:
+# from flask import Flask
+# app = Flask(__name__)
+# socketio.init_app(app)
+
+@operation_information_router.route("/api/get-coordinates", methods=["GET"])
+def get_coordinates():
+    """Fetch all the coordinates
+
+    Returns:
+        dict: return the api response
+    """
+    operation = OperationInformationDb
+    process = (
+        operation.query.filter(operation.process_id <= 14)
+        .order_by(operation.process_id)
+        .all()
+    )
+
+    operation_data = operation_information_schema(many=True).dump(process)
+
+    coordinates_data = [
+        {
+            "process_id": item["process_id"],
+            "operation_status": item["operation_status"],
+            "x": item["coordinates"]["x_position"],
+            "y": item["coordinates"]["y_position"],
+            "width": item["coordinates"]["width"],
+            "height": item["coordinates"]["height"],
+        }
+        for item in operation_data
+    ]
+
+    return {
+        "success": True,
+        "message_response": "COORDINATES FETCHED SUCCESSFULLY",
+        "message_content": "COORDINATES fetched successfully",
+        "data": coordinates_data,
+    }, 200
+
+
+@operation_information_router.route("/api/get-all-operations", methods=["GET"])
+def get_all_operations():
+    """Fetch all the operations information
+
+    Returns:
+        dict: return the api response
+    """
+    operation = OperationInformationDb
+    query = (
+        operation.query.filter(operation.process_id <= 14)
+        .order_by(operation.process_id)
+        .all()
+    )
+
+    operation_data = operation_information_schema(many=True).dump(query)
+
+    return {
+        "success": True,
+        "message_response": "OPERATIONS FETCHED SUCCESSFULLY",
+        "message_content": "OPERATIONS fetched successfully",
+        "data": operation_data,
+    }, 200
+
+
+@operation_information_router.route(
+    "/api/update-units/<int:process_id>", methods=["PUT"]
+)
+def update_units(process_id):
+    """Update the planned_number_units for a specific operation
+
+    Returns:
+        dict: return the api response
+
+    """
+    try:
+        data = request.json.get("params")
+        planned_number_units = data.get("planned_number_units")
+
+        if planned_number_units is None:
+            return {"success": False, "message": "Missing planned_number_units"}, 400
+
+        operation = OperationInformationDb.query.filter_by(
+            process_id=process_id
+        ).first()
+
+        if not operation:
+            return {"success": False, "message": "Operation not found"}, 400
+
+        operation.planned_number_units = planned_number_units
+        db.session.commit()
+
+        # Emit a WebSocket event to notify clients about the update
+        socketio.emit(
+            "update_units",
+            {
+                "process_id": process_id,
+                "planned_number_units": planned_number_units,
+            },
+        )
+
+        return {
+            "success": True,
+            "message": "PLANNED_NUMBER_UNITS UPDATED SUCCESSFULLY",
+            "updated_value": planned_number_units,
+        }, 200
+
+    except Exception as e:
+        return {"success": False, "message": f"Error updating units: {str(e)}"}, 500
+
+
+# Example WebSocket route
+@socketio.on("connect")
+def handle_connect():
+    print("Client connected")
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    print("Client disconnected")
+

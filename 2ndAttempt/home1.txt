@@ -1,0 +1,122 @@
+<template>
+  <v-app>
+    <!-- Navigation Bar -->
+    <v-app-bar app color="primary" dark>
+      <v-toolbar-title>Home</v-toolbar-title>
+    </v-app-bar>
+
+    <!-- Main Content -->
+    <v-main>
+      <v-container>
+        <h1>Welcome to the Homepage</h1>
+        <p>This is your Vuetify-powered homepage with 14 buttons.</p>
+
+        <!-- Dynamically Render Buttons -->
+        <div v-for="(button, index) in dashboardButtons" :key="index">
+          <v-btn
+            :color="button.color"
+            @click="handleButtonAction(button.action)"
+          >
+            {{ button.label }}
+          </v-btn>
+        </div>
+      </v-container>
+    </v-main>
+  </v-app>
+</template>
+
+<script>
+import { DASHBOARD_BUTTONS } from "../recipe/rButtons";
+import CommonButton from "";
+export default {
+  name: "HomePage",
+  components: {
+    CommonButton,
+  },
+  data() {
+    return {
+      dashboardButtons: [...DASHBOARD_BUTTONS],
+      // Define all buttons and their actions
+      buttons: [
+        { label: "Go to The First App", color: "primary", action: "firstApp" },
+        { label: "Second Button", color: "secondary", action: "second" },
+        { label: "Third Button", color: "success", action: "third" },
+        { label: "Fourth Button", color: "info", action: "fourth" },
+        { label: "Fifth Button", color: "warning", action: "fifth" },
+        { label: "Sixth Button", color: "error", action: "sixth" },
+        { label: "Seventh Button", color: "primary", action: "seventh" },
+        { label: "Eighth Button", color: "secondary", action: "eighth" },
+        { label: "Ninth Button", color: "success", action: "ninth" },
+        { label: "Tenth Button", color: "info", action: "tenth" },
+        { label: "Eleventh Button", color: "warning", action: "eleventh" },
+        { label: "Twelfth Button", color: "error", action: "twelfth" },
+        { label: "Thirteenth Button", color: "primary", action: "thirteenth" },
+        {
+          label: "Fourteenth Button",
+          color: "secondary",
+          action: "fourteenth",
+        },
+      ],
+    };
+  },
+  methods: {
+    handleButtonAction(action) {
+      const actions = {
+        firstApp: () => {
+          this.$router.push("/first-app");
+        },
+        second: () => {
+          console.log("Second button clicked");
+        },
+        third: () => {
+          console.log("Third button clicked");
+        },
+        fourth: () => {
+          console.log("Fourth button clicked");
+        },
+        fifth: () => {
+          console.log("Fifth button clicked");
+        },
+        sixth: () => {
+          console.log("Sixth button clicked");
+        },
+        seventh: () => {
+          console.log("Seventh button clicked");
+        },
+        eighth: () => {
+          console.log("Eighth button clicked");
+        },
+        ninth: () => {
+          console.log("Ninth button clicked");
+        },
+        tenth: () => {
+          console.log("Tenth button clicked");
+        },
+        eleventh: () => {
+          console.log("Eleventh button clicked");
+        },
+        twelfth: () => {
+          console.log("Twelfth button clicked");
+        },
+        thirteenth: () => {
+          console.log("Thirteenth button clicked");
+        },
+        fourteenth: () => {
+          console.log("Fourteenth button clicked");
+        },
+      };
+
+      // Execute the corresponding action
+      if (actions[action]) {
+        actions[action]();
+      } else {
+        console.log("Unknown action");
+      }
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Custom styles if needed */
+</style>

@@ -1,0 +1,34 @@
+const DASHBOARD_BUTTONS = [
+  {
+    componentName: "CommonButton",
+    display: {
+      name: "Real-Time Andon System",
+    },
+    directives: {
+      to: {
+        path: "/real-time-andon-system",
+      },
+      disabled: False,
+    },
+  },
+  {
+    componentName: "CommonButton",
+    display: {
+      name: "Button 2",
+    },
+    directives: {
+      disabled: True,
+    },
+  },
+  {
+    componentName: "CommonButton",
+    display: {
+      name: "Button 3",
+    },
+    directives: {
+      disabled: True,
+    },
+  },
+];
+
+export { DASHBOARD_BUTTONS };

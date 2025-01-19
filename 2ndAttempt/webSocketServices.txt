@@ -1,0 +1,103 @@
+// webSocketServices.js
+
+// WebSocketService.js
+
+import { io } from "socket.io-client";
+
+class WebSocketService {
+  constructor() {
+    this.socket = null;
+  }
+
+  // Initialize WebSocket connection
+  connect(url, options = {}) {
+    if (!this.socket) {
+      this.socket = io(url, options);
+
+      this.socket.on("connect", () => {
+        console.log("WebSocket connected:", this.socket.id);
+      });
+
+      this.socket.on("disconnect", () => {
+        console.log("WebSocket disconnected");
+      });
+    }
+  }
+
+  // Emit an event
+  emit(event, data) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  }
+
+  // Listen to an event
+  on(event, callback) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
+
+  // Remove a specific event listener
+  off(event, callback) {
+    if (this.socket) {
+      this.socket.off(event, callback);
+    }
+  }
+
+  // Disconnect WebSocket
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+  }
+}
+
+const webSocketService = new WebSocketService();
+export default webSocketService;
+
+
+// main.js
+
+import webSocketService from "@/services/WebSocketService";
+
+webSocketService.connect("http://localhost:5000"); // Use your backend URL
+
+
+
+------------------------------------------------ component example
+
+import webSocketService from "@/services/WebSocketService";
+
+export default {
+  name: "ProcessInformationScreen",
+  data() {
+    return {
+      updatedUnits: null,
+    };
+  },
+  mounted() {
+    // Listen for updates
+    webSocketService.on("update_units", (data) => {
+      console.log("Update received:", data);
+      this.updatedUnits = data.planned_number_units;
+    });
+  },
+  methods: {
+    updateUnits(processId, plannedUnits) {
+      // Emit an update event
+      webSocketService.emit("update_units", {
+        process_id: processId,
+        planned_number_units: plannedUnits,
+      });
+    },
+  },
+  beforeDestroy() {
+    // Remove event listeners when the component is destroyed
+    webSocketService.off("update_units");
+  },
+};
+
+
+

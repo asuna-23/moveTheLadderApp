@@ -1,0 +1,101 @@
+// websocketService.js
+
+import { io } from 'socket.io-client';
+import { API_BASE_URL } from '@/environment';
+
+class WebSocketService {
+  constructor() {
+    this.socket = null;
+  }
+
+  connect() {
+    this.socket = io(API_BASE_URL);
+
+    this.socket.on('connect', () => {
+      console.log('Connected to WebSocket server');
+    });
+
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
+    });
+  }
+
+  on(event, callback) {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
+
+  emit(event, data) {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
+  }
+}
+
+export const websocketService = new WebSocketService();
+
+
+// ProcessInformationScreen
+
+import { websocketService } from '@/utility/websocketService';
+import { FetchAPI } from '@/utility/apiRequest';
+
+export default {
+  name: 'ProcessInformationScreen',
+  data() {
+    return {
+      referenceCT: 0,
+      operationInformation: [],
+      incrementedUnits: 0,
+      incrementInterval: null,
+      nonDefectiveProducts: 0,
+      workingRate: 0,
+      operation_table: [],
+      replenishmentData: [],
+      abnormalitiesData: [],
+      currentComponent: 'ProcessChart',
+    };
+  },
+  async mounted() {
+    await this.initializeData();
+    websocketService.connect();
+
+    // Listen for database updates
+    websocketService.on('databaseUpdate', async (data) => {
+      console.log('Received update from WebSocket:', data);
+      await this.updateLocalData(data);
+    });
+
+    this.startSwitchInterval();
+  },
+  beforeDestroy() {
+    websocketService.disconnect();
+  },
+  methods: {
+    async initializeData() {
+      await this.setOperationsData();
+      await this.setReferenceCT();
+      await this.setAbnormalitiesData();
+      await this.setReplenishmentData();
+    },
+    async updateLocalData(updatedData) {
+      // Logic to update specific parts of your data based on the WebSocket payload
+      this.operationInformation = updatedData.operations || this.operationInformation;
+      this.replenishmentData = updatedData.replenishments || this.replenishmentData;
+      this.abnormalitiesData = updatedData.abnormalities || this.abnormalitiesData;
+
+      // Recalculate dependent data
+      await this.setNonDefectiveProducts();
+      this.getOperationTable();
+    },
+    // Existing methods...
+  },
+};
+
