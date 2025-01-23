@@ -1,0 +1,195 @@
+//
+
+import { shallowMount } from "@vue/test-utils";
+import bcrypt from "bcryptjs";
+import axios from "axios";
+import Component from "@/path-to-your-component.vue"; // Replace with the correct path
+
+jest.mock("bcryptjs", () => ({
+  genSaltSync: jest.fn(),
+  hashSync: jest.fn(),
+}));
+
+jest.mock("axios");
+
+describe("submitLogin Method", () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(Component);
+
+    // Mocking data
+    wrapper.setData({
+      username: "testuser",
+      password: "password123",
+      isValid: true,
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should hash the password and send it to the API", async () => {
+    // Mock bcrypt functions
+    bcrypt.genSaltSync.mockReturnValue("salt");
+    bcrypt.hashSync.mockReturnValue("hashedPassword");
+
+    // Mock axios response
+    axios.post.mockResolvedValue({
+      data: { success: true },
+    });
+
+    // Call the submitLogin method
+    await wrapper.vm.submitLogin();
+
+    // Check that bcrypt functions were called
+    expect(bcrypt.genSaltSync).toHaveBeenCalledWith(10);
+    expect(bcrypt.hashSync).toHaveBeenCalledWith("password123", "salt");
+
+    // Check axios post call
+    expect(axios.post).toHaveBeenCalledWith("http://127.0.0.1:5000/login", {
+      username: "testuser",
+      password: "hashedPassword",
+    });
+  });
+
+  it("should display an alert and redirect on successful login", async () => {
+    // Mock bcrypt and axios
+    bcrypt.genSaltSync.mockReturnValue("salt");
+    bcrypt.hashSync.mockReturnValue("hashedPassword");
+    axios.post.mockResolvedValue({
+      data: { success: true },
+    });
+
+    // Spy on alert and router push
+    global.alert = jest.fn();
+    wrapper.vm.$router = { push: jest.fn() };
+
+    // Call the submitLogin method
+    await wrapper.vm.submitLogin();
+
+    // Check alert and router.push calls
+    expect(global.alert).toHaveBeenCalledWith("Login successful!");
+    expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/home");
+  });
+
+  it("should display an alert on invalid login", async () => {
+    // Mock bcrypt and axios
+    bcrypt.genSaltSync.mockReturnValue("salt");
+    bcrypt.hashSync.mockReturnValue("hashedPassword");
+    axios.post.mockResolvedValue({
+      data: { success: false },
+    });
+
+    // Spy on alert
+    global.alert = jest.fn();
+
+    // Call the submitLogin method
+    await wrapper.vm.submitLogin();
+
+    // Check alert call
+    expect(global.alert).toHaveBeenCalledWith("Invalid username or password.");
+  });
+
+  it("should display an alert on login error", async () => {
+    // Mock bcrypt and axios
+    bcrypt.genSaltSync.mockReturnValue("salt");
+    bcrypt.hashSync.mockReturnValue("hashedPassword");
+    axios.post.mockRejectedValue(new Error("Network error"));
+
+    // Spy on alert
+    global.alert = jest.fn();
+
+    // Call the submitLogin method
+    await wrapper.vm.submitLogin();
+
+    // Check alert call
+    expect(global.alert).toHaveBeenCalledWith("An error occurred while logging in.");
+  });
+
+  it("should not call axios if form is invalid", async () => {
+    // Set isValid to false
+    wrapper.setData({ isValid: false });
+
+    // Call the submitLogin method
+    await wrapper.vm.submitLogin();
+
+    // Check that axios was not called
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+});
+
+
+##
+
+import pytest
+from flask import Flask
+from app.models import User
+from app.auth import auth_bp
+
+
+@pytest.fixture
+def app():
+    app = Flask(__name__)
+    app.register_blueprint(auth_bp)
+    app.config['TESTING'] = True
+    return app
+
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+
+def test_login_success(client, mocker):
+    # Mock the User model
+    mock_user = mocker.MagicMock()
+    mock_user.username = "testuser"
+    mock_user.password_hash = "hashedpassword123"
+
+    # Mock the database query
+    mocker.patch("app.models.User.query.filter_by", return_value=mocker.MagicMock(first=lambda: mock_user))
+
+    # Simulate frontend hashed password
+    frontend_hashed_password = "hashedpassword123"
+
+    # Send the POST request
+    response = client.post("/login", json={"username": "testuser", "password": frontend_hashed_password})
+
+    # Assert response
+    assert response.status_code == 200
+    assert response.json == {"success": True, "message": "Login successful"}
+
+
+def test_login_invalid_password(client, mocker):
+    # Mock the User model
+    mock_user = mocker.MagicMock()
+    mock_user.username = "testuser"
+    mock_user.password_hash = "hashedpassword123"
+
+    # Mock the database query
+    mocker.patch("app.models.User.query.filter_by", return_value=mocker.MagicMock(first=lambda: mock_user))
+
+    # Simulate incorrect frontend hashed password
+    frontend_hashed_password = "incorrecthash"
+
+    # Send the POST request
+    response = client.post("/login", json={"username": "testuser", "password": frontend_hashed_password})
+
+    # Assert response
+    assert response.status_code == 401
+    assert response.json == {"success": False, "message": "Invalid username or password"}
+
+
+def test_login_user_not_found(client, mocker):
+    # Mock the database query to return no user
+    mocker.patch("app.models.User.query.filter_by", return_value=mocker.MagicMock(first=lambda: None))
+
+    # Send the POST request
+    response = client.post("/login", json={"username": "unknownuser", "password": "hashedpassword123"})
+
+    # Assert response
+    assert response.status_code == 404
+    assert response.json == {"success": False, "message": "User not found"}
+
