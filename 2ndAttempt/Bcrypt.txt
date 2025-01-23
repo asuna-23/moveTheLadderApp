@@ -1,0 +1,176 @@
+
+npm install bcryptjs
+
+import bcrypt from "bcryptjs";
+
+export default {
+  data() {
+    return {
+      username: "",
+      password: "",
+      isValid: false,
+      rules: {
+        required: (value) => !!value || "This field is required",
+      },
+    };
+  },
+  methods: {
+    async submitLogin() {
+      if (this.isValid) {
+        try {
+          // Hash the password
+          const salt = bcrypt.genSaltSync(10);
+          const hashedPassword = bcrypt.hashSync(this.password, salt);
+
+          const response = await axios.post("http://127.0.0.1:5000/login", {
+            username: this.username,
+            password: hashedPassword, // Send the hashed password
+          });
+
+          if (response.data.success) {
+            alert("Login successful!");
+            this.$router.push("/home");
+          } else {
+            alert("Invalid username or password.");
+          }
+        } catch (error) {
+          console.error("Login error:", error);
+          alert("An error occurred while logging in.");
+        }
+      }
+    },
+    resetForm() {
+      this.username = "";
+      this.password = "";
+      this.$refs.loginForm.resetValidation();
+    },
+  },
+};
+
+
+##
+
+from flask import Blueprint, request, jsonify
+from app.models import User
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    hashed_password = data.get('password')  # Receive hashed password
+
+    # Query the user in the database
+    user = User.query.filter_by(username=username).first()
+
+    if user:
+        # Compare the frontend's hashed password with the database's stored hash
+        if user.password_hash == hashed_password:
+            return jsonify({"success": True, "message": "Login successful"}), 200
+        else:
+            return jsonify({"success": False, "message": "Invalid username or password"}), 401
+    else:
+        return jsonify({"success": False, "message": "User not found"}), 404
+
+
+---------------------------
+
+pip install pyjwt flask-jwt-extended
+
+from flask import Blueprint, request, jsonify
+from app import db
+from app.models import User
+from flask_jwt_extended import create_access_token, jwt_required, JWTManager
+
+auth_bp = Blueprint('auth', __name__)
+
+# Initialize JWT Manager
+jwt = JWTManager()
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Query the user in the database
+    user = User.query.filter_by(username=username).first()
+
+    if user and user.check_password(password):
+        # Generate JWT token
+        access_token = create_access_token(identity={"username": user.username})
+        return jsonify({"success": True, "token": access_token}), 200
+    else:
+        return jsonify({"success": False, "message": "Invalid username or password"}), 401
+
+# Example of a protected route
+@auth_bp.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    return jsonify({"message": "You have access to this protected route!"})
+
+
+/// app
+
+from flask_jwt_extended import JWTManager
+
+app = Flask(__name__)
+app.config['JWT_SECRET_KEY'] = 'your-secret-key'  # Use a strong secret key
+jwt.init_app(app)
+
+
+/////
+
+async submitLogin() {
+  if (this.isValid) {
+    try {
+      const response = await axios.post("http://127.0.0.1:5000/login", {
+        username: this.username,
+        password: this.password,
+      });
+
+      if (response.data.success) {
+        const token = response.data.token;
+
+        // Store the token in localStorage (or cookie)
+        localStorage.setItem("jwt_token", token);
+
+        alert("Login successful!");
+        this.$router.push("/home");
+      } else {
+        alert("Invalid username or password.");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred while logging in.");
+    }
+  }
+}
+
+
+
+///
+
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("jwt_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+
+///
+
+@auth_bp.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    return jsonify({"message": "You have access to this protected route!"})
+
+
+//logout
+
+localStorage.removeItem("jwt_token");
+
+
